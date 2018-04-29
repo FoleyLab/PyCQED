@@ -12,6 +12,20 @@ from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
 
+### should create a function that takes a wavefunction in vector
+### format and computes a density matrix
+''' def Form_Rho(Psi):
+
+    return D
+
+'''
+
+### should create a function that applies Lindblad operator to density matrix
+''' def Lindbald(D):
+
+    return D
+'''
+### Take commutator of H and D to give Ddot
 def DDot(H, D):
     ci = 0.+1j
     return -ci*(np.dot(H,D) - np.dot(D, H))
@@ -116,17 +130,17 @@ def RK4(H, D, h, t):
     return Df
 
 
-Psi = np.zeros((2,4))
+Psi = np.zeros((2,6))
 print(Psi)
 
 idx = 0
-for i in range(0,2):
+for i in range(0,3):
     for j in range(0,2):
         Psi[0][idx] = i
         Psi[1][idx] = j
         idx = idx+1
         
-
+print(Psi)
 Hphot = H_Photon(Psi, 0.5)
 print(Hphot)
 
@@ -138,24 +152,33 @@ print(Hi)
 
 Htot = Hphot + Hmol + Hi
 Ntime = 4000
-p23 = np.zeros(Ntime,dtype=complex)
 p2 = np.zeros(Ntime,dtype=complex)
 p3 = np.zeros(Ntime,dtype=complex)
-p32 = np.zeros(Ntime,dtype=complex)
+p4 = np.zeros(Ntime,dtype=complex)
+p5 = np.zeros(Ntime,dtype=complex)
 t = np.zeros(Ntime)
 
-D = np.zeros((4,4),dtype=complex)
-D[1][1] = 1.+0j
+D = np.zeros((6,6),dtype=complex)
+D[1][1] = 1./4+0j
+D[2][2] = 1./4+0j
+#D[3][3] = 1./4+0j
+#D[4][4] = 1./4+0j
+D[1][2] = D[2][1] = 1./4+0j
+#D[1][3] = D[3][1] = 1./4+0j
+#D[1][4] = D[4][1] = 1./4+0j
+#D[2][3] = D[3][2] = 1./4+0j
+#D[2][4] = D[4][2] = 1./4+0j
+#D[3][4] = D[4][3] = 1./4+0j
 for i in range(0,Ntime):
     Dp1 = RK4(Htot, D, 0.01, i*0.01)
     t[i] = 0.01*i
-    p23[i] = Dp1[1][2]
     p2[i] = Dp1[1][1]
     p3[i] = Dp1[2][2]
-    p32[i] = Dp1[2][1]
+    p4[i] = Dp1[3][3]
+    p5[i] = Dp1[4][4]
     D = Dp1
 
 
-plt.plot(t, np.imag(p23), 'red', t, np.real(p3), 'blue')
+plt.plot(t, np.real(p2), 'red', t, np.real(p3), 'blue', t, np.real(p4), 'green', t, np.real(p5), 'purple')
 plt.show()
     
