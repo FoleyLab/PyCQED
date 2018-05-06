@@ -6,11 +6,22 @@ Created on Sat Apr 28 18:00:57 2018
 @author: jay
 """
 
-
 import numpy as np
 from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
+
+### Somewhat similar to coupling strength and dissipation from HNPs
+gam_diss = 0.025
+gam_deph = 0.005
+g_coup = 0.05
+
+## Transform operators to basis that diagonalizes Htot
+def Transform(v, O):
+    vtO = np.dot(LA.inv(v),O)
+    Odiag = np.dot(vtO,v)
+    return Odiag
+
 
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
@@ -152,87 +163,122 @@ def RK4(H, D, h, t):
     ### Get k1
     H1 = Hamiltonian(H, t)
     D1 = D    
-    k1 = h*DDot(H1,D1) + h*L_Diss(D1, 0.001) + h*L_Deph(D1, 0.2)
+    k1 = h*DDot(H1,D1) + h*L_Diss(D1, gam_diss) + h*L_Deph(D1, gam_deph)
     
     ### Update H and D and get k2
     H2 = Hamiltonian(H, t+h/2)
     D2 = D+k1/2.
-    k2 = h*DDot(H2, D2) + h*L_Diss(D2, 0.001) + h*L_Deph(D2, 0.2)
+    k2 = h*DDot(H2, D2) + h*L_Diss(D2, gam_diss) + h*L_Deph(D2, gam_deph)
     
     ### UPdate H and D and get k3
     H3 = H2
     D3 = D+k2/2
-    k3 = h*DDot(H3, D3) + h*L_Diss(D3, 0.001) + h*L_Deph(D3, 0.2)
+    k3 = h*DDot(H3, D3) + h*L_Diss(D3, gam_diss) + h*L_Deph(D3, gam_deph)
     
     ### Update H and D and get K4
     H4 = Hamiltonian(H, t+h)
     D4 = D+k3
-    k4 = h*DDot(H4, D4) + h*L_Diss(D4, 0.001) + h*L_Deph(D4, 0.2)
+    k4 = h*DDot(H4, D4) + h*L_Diss(D4, gam_diss) + h*L_Deph(D4, gam_deph)
     
     Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
     return Df
 
+### Form Basis states
+### Initialize basis vectors
+Psi = np.zeros((2,4))
 
-Psi = np.zeros((2,6))
-print(Psi)
-
+### Define basis states
 idx = 0
-for i in range(0,3):
+for i in range(0,2):
     for j in range(0,2):
         Psi[0][idx] = i
         Psi[1][idx] = j
         idx = idx+1
         
+### Print basis states for verificatio
 print(Psi)
+### Form photon Hamiltonian in basis of Psi
 Hphot = H_Photon(Psi, 0.5)
-print(Hphot)
 
+### Form molecular Hamiltonian in basis of Psi
 Hmol = H_Molecule(Psi, 0.5)
-print(Hmol)
-  
-Hi = H_Interaction(Psi, 0.5)
-print(Hi)
 
+### Form interaction Hamiltoninan in basis of Psi
+Hi = H_Interaction(Psi, g_coup)
+
+### Form total Hamiltonian
 Htot = Hphot + Hmol + Hi
+
+## Diagonalize Total Hamiltonian, store vectors in v array
+vals, vecs = LA.eig(Htot)
+idx = vals.argsort()[::1]
+vals = vals[idx]
+v = vecs[:,idx]
+
+print(v)
+
+Hdiag = Transform(v, Htot)
+print(Hdiag)
+
 Ntime = 4000
 p1 = np.zeros(Ntime,dtype=complex)
 p2 = np.zeros(Ntime,dtype=complex)
 p3 = np.zeros(Ntime,dtype=complex)
 p4 = np.zeros(Ntime,dtype=complex)
-p5 = np.zeros(Ntime,dtype=complex)
-p6 = np.zeros(Ntime,dtype=complex)
+#p5 = np.zeros(Ntime,dtype=complex)
+#p6 = np.zeros(Ntime,dtype=complex)
+pd1 = np.zeros(Ntime,dtype=complex)
+pd2 = np.zeros(Ntime,dtype=complex)
+pd3 = np.zeros(Ntime,dtype=complex)
+pd4 = np.zeros(Ntime,dtype=complex)
+#pd5 = np.zeros(Ntime,dtype=complex)
+#pd6 = np.zeros(Ntime,dtype=complex)
 t = np.zeros(Ntime)
 
-Psi = np.zeros(6, dtype=complex)
+Psi = np.zeros(4, dtype=complex)
 
-Psi[0] = np.sqrt(0.5/10)+0j
-Psi[1] = np.sqrt(1.5/10)+0j
-Psi[2] = np.sqrt(2./10)+0j
-Psi[3] = np.sqrt(1.5/10)+0j
-Psi[4] = np.sqrt(4./10)+0j
-Psi[5] = np.sqrt(0.5/10)+0j
+Psi = np.sqrt(1/4)*v[0]+np.sqrt(1/4)*v[1]+np.sqrt(1/4)*v[2] + np.sqrt(1/4)*v[3]
+print(Psi)
+'''
+Psi[0] = np.sqrt(0.5/7)+0j
+Psi[1] = np.sqrt(1.5/7)+0j
+Psi[2] = np.sqrt(2.0/7)+0j
+Psi[3] = np.sqrt(3.0/7)+0j
+'''
+#Psi[4] = np.sqrt(3.5/10)+0j
+#Psi[5] = np.sqrt(1./10)+0j
 D = Form_Rho(Psi)
 
-bra_1 = CreateBas(6, 1)
+bra_1 = CreateBas(4, 1)
 
 rho_1 = Form_Rho(bra_1)
 
-
-
+''' Should diagonalize and show populations in diagonalized basis
+    to see if dynamics are dramatically different 
+    '''
+    
 for i in range(0,Ntime):
-    Dp1 = RK4(Htot, D, 0.01, i*0.01)
+    Dp1 = RK4(Htot, D, 0.05, i*0.05)
     t[i] = 0.01*i
     p1[i] = Dp1[0][0]
     p2[i] = Dp1[1][1]
     p3[i] = Dp1[2][2]
     p4[i] = Dp1[3][3]
-    p5[i] = Dp1[4][4]
-    p6[i] = Dp1[5][5]
+ #   p5[i] = Dp1[4][4]
+ #   p6[i] = Dp1[5][5]
     D = Dp1
+    DD = Transform(v, Dp1)
+    pd1[i] = DD[0][0]
+    pd2[i] = DD[1][1]
+    pd3[i] = DD[2][2]
+    pd4[i] = DD[3][3]
+#    pd5[i] = DD[4][4]
+#    pd6[i] = DD[5][5]
     ##trp = np.trace(D)
     ##print(np.real(trp))
 
 
-plt.plot(t, np.real(p1), 'black', t, np.real(p2), 'red', t, np.real(p3), 'blue', t, np.real(p4), 'green', t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+#plt.plot(t, np.real(p1), 'black', t, np.real(p2), 'red', t, np.real(p3), 'blue', t, np.real(p4), 'green') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'b--', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
 plt.show()
 
