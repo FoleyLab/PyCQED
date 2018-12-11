@@ -17,10 +17,55 @@ eps = 0.075
 mu_x = 0.01
 mu_y = 0.001
 mu_z = 0.02
-mu = [mu_x, mu_y, mu_z]
+N = 3
 dt = 0.1
-gamma = np.zeros(4)
+mu = np.zeros((N,3))
+r  = np.zeros((N,3))
+coords = np.zeros((N,3))
+### coordinates of particles stored in a dictionary
+coords[0][0] = 0
+coords[1][0] = 1.5e-10
+coords[2][0] = 3.0e-10
 
+for i in range(0,N):
+    mu[i][0] = mu_x
+    mu[i][1] = mu_y
+    mu[i][2] = mu_z
+    
+### give particle index i and j, return
+### separation vector between the two
+def SepVector(coords, i, j):
+    r = np.zeros(3)
+    for l in range(0,3):
+        r[l] = coords[j][l] - coords[i][l]
+    return r
+
+def COM(coords):
+    ### all masses are equal, so we can
+    ### just say total mass is equal to the number of particles
+    ### and that each particle has mass 1
+    M = len(coords)
+    R = np.zeros(3)
+    for l in range(0,len(coords)):
+        for j in range(0,3):
+            R[j] = R[j] + coords[l][j]
+
+### Function to compute dipole-dipole coupling element
+def DipoleDipole(mu_i, mu_j, r):
+
+  ## refractive index of vaccuum
+  n = 1.
+  normr = math.sqrt(np.dot(r,r))
+  oer2 = 1./(normr**2)
+  pre = 1./(n**2 * normr**3)
+  
+  t1 = np.dot(mu_i,mu_j)
+  t2 = np.dot(mu_i,r)
+  t3 = np.dot(r,mu_j)
+  
+  Vint = pre*(t1 - 3*oer2*t2*t3)
+
+  return Vint
 
 ## Transform operators to basis that diagonalizes Htot
 def Transform(v, O):
