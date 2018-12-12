@@ -11,27 +11,6 @@ from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
 
-### Somewhat similar to coupling strength and dissipation from HNPs
-gamma= 0.01
-eps = 0.075
-mu_x = 0.01
-mu_y = 0.001
-mu_z = 0.02
-N = 3
-dt = 0.1
-mu = np.zeros((N,3))
-r  = np.zeros((N,3))
-coords = np.zeros((N,3))
-### coordinates of particles stored in a dictionary
-coords[0][0] = 0
-coords[1][0] = 1.5e-10
-coords[2][0] = 3.0e-10
-
-for i in range(0,N):
-    mu[i][0] = mu_x
-    mu[i][1] = mu_y
-    mu[i][2] = mu_z
-    
 ### give particle index i and j, return
 ### separation vector between the two
 def SepVector(coords, i, j):
@@ -49,6 +28,7 @@ def COM(coords):
     for l in range(0,len(coords)):
         for j in range(0,3):
             R[j] = R[j] + coords[l][j]
+    return R/M
 
 ### Function to compute dipole-dipole coupling element
 def DipoleDipole(mu_i, mu_j, r):
@@ -138,6 +118,11 @@ def DDot(H, D):
 def Hamiltonian(H, t):
     return H
 
+def EField(t, tau):
+    Ef = 0.
+    if t<tau:
+        Ef = 0.0001*np.sin(t*np.pi/tau)*np.sin(t*np.pi/tau)*np.sin(0.07424*t)
+    return Ef
 
 ## Interaction is going to require the coordinates of atom i and atom j
 ## along with dipole moment expectation value of atom j and dipole matrix
@@ -145,7 +130,44 @@ def Hamiltonian(H, t):
 def H_Interaction(Psi, g):
 
     return Hp
+
+
+### RK4 routine
+def RK4(H0, mu, Vint, gamma, D, h, t):
+    k1 = np.zeros_like(D)
+    k2 = np.zeros_like(D)
+    k3 = np.zeros_like(D)
+    k4 = np.zeros_like(D)
+    D1 = np.zeros_like(D)
+    D2 = np.zeros_like(D)
+    D3 = np.zeros_like(D)
+    D4 = np.zeros_like(D)
     
+    ### Get k1
+    H1 = H0 - EField(t, tau)*mu + Vint
+    D1 = D    
+    k1 = h*DDot(H1,D1) + h*L_Diss(D1, gamma)
+    
+    ## Update H and D and get k2
+    H2 = H0 - EField(t+h/2, tau)*mu + Vint
+    D2 = D+k1/2.
+    k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma)
+    
+    ### UPdate H and D and get k3
+    H3 = H2
+    D3 = D+k2/2
+    k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) 
+    
+    ### Update H and D and get K4
+    H4 = H0 - EField(t+h, tau)*mu + Vint
+    D4 = D+k3
+    k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma)
+    
+    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
+    return Df
+
+
+'''   
 def RK4(H, D, h, t):
     k1 = np.zeros_like(D)
     k2 = np.zeros_like(D)
@@ -181,6 +203,7 @@ def RK4(H, D, h, t):
 
 ### Form Basis states
 ### Initialize basis vectors
+
 Psi = np.zeros((2,4))
 
 ### Define basis states
@@ -241,7 +264,7 @@ Psi[1] = np.sqrt(1.)
 #Psi[2] = np.sqrt(1./3)
 #Psi[3] = np.sqrt(1.)
 
-'''
+
 print(Psi)
 
 Psi[0] = np.sqrt(0.5/7)+0j
@@ -251,7 +274,7 @@ Psi[3] = np.sqrt(3.0/7)+0j
 
 #Psi[4] = np.sqrt(3.5/10)+0j
 #Psi[5] = np.sqrt(1./10)+0j
-'''
+
 
 D = Form_Rho(Psi)
 
@@ -300,4 +323,4 @@ for i in range(0,len(p1)):
         print("decay constant in ev   is ",0.5*27*np.log(2.)/t[i])
         break
     
-
+'''
