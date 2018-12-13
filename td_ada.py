@@ -133,7 +133,7 @@ def H_Interaction(Psi, g):
 
 
 ### RK4 routine
-def RK4(H0, mu, Vint, gamma, D, h, t):
+def RK4(H0, mu, Vint, gamma, D, h, t, tau):
     k1 = np.zeros_like(D)
     k2 = np.zeros_like(D)
     k3 = np.zeros_like(D)

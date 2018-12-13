@@ -6,7 +6,7 @@ Created on Tue Dec 11 16:32:40 2018
 @author: jay
 """
 import td_ada
-
+import numpy as np
 
 ### Somewhat similar to coupling strength and dissipation from HNPs
 gamma= 0.01
@@ -61,7 +61,7 @@ mu[1] = mu_y
 mu[2] = mu_z
     
 ### compute center of mass of sysstem    
-R_com = COM(coords)
+R_com = td_ada.COM(coords)
 
 ez = np.zeros(10000)
 time = np.zeros(10000)
@@ -75,7 +75,7 @@ for i in range(0,10):
     ### update time
     time[i] = i*dt
     ### update electric field
-    ez[i] = EField(i*dt, tau)
+    ez[i] = td_ada.EField(i*dt, tau)
     ### loop over particles and update
     ### density matrix for each in turn
     for j in range(0,N):
@@ -95,16 +95,16 @@ for i in range(0,10):
                 mutmp[0] = muexp[k][0]
                 mutmp[1] = muexp[k][1]
                 mutmp[2] = muexp[k][2]
-                rtmp = SepVector(coords, k, j)
+                rtmp = td_ada.SepVector(coords, k, j)
                 #print("rtmp",rtmp)
                 #print("mutmp",mutmp)
-                Vtmp = DipoleDipole(mu, mutmp, rtmp)
+                Vtmp = td_ada.DipoleDipole(mu, mutmp, rtmp)
                 Vint[0][1] = Vint[0][1] + Vtmp
                 Vint[1][0] = Vint[1][0] + Vtmp
         #print("Vint",Vint)
                 
         ### update this DM
-        Dtmp = RK4(H0, MUZ, Vint, gamma, Dtmp, dt, dt*i)
+        Dtmp = td_ada.RK4(H0, MUZ, Vint, gamma, Dtmp, dt, dt*i, tau)
         
         ### get product of MUZ and Dtmp
         DMU = np.matmul(Dtmp, MUZ)
