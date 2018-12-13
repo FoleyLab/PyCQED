@@ -15,7 +15,7 @@ mu_x = 0.01
 mu_y = 0.001
 mu_z = 0.02
 N = 3
-dt = 0.1
+dt = 0.01
 tau = 150.
 ### Not sure if this is needed r  = np.zeros((N,3))
 
@@ -24,6 +24,9 @@ tau = 150.
 coords = np.zeros((N,3))
 ### dipole expectation value of each particle
 muexp = np.zeros((N,3))
+mu = np.zeros(3)
+mutmp = np.zeros(3)
+rtmp = np.zeros(3)
 ### density matrix of each particle, each
 ### 2x2 DM is unrolled as a vector
 D = np.zeros((N,4),dtype=complex)
@@ -50,14 +53,12 @@ for i in range(0,N):
 ### the particles are separated by 1.5 Angstroms along 
 ### the x-axis
 coords[0][0] = 0
-coords[1][0] = 1.5e-10
-coords[2][0] = 3.0e-10
+coords[1][0] = 2
+coords[2][0] = 4
 
-
-for i in range(0,N):
-    mu[i][0] = mu_x
-    mu[i][1] = mu_y
-    mu[i][2] = mu_z
+mu[0] = mu_x
+mu[1] = mu_y
+mu[2] = mu_z
     
 ### compute center of mass of sysstem    
 R_com = COM(coords)
@@ -68,7 +69,9 @@ r1 = np.zeros(10000)
 r2 = np.zeros(10000)
 r3 = np.zeros(10000)
 ### Propagation loop
-for i in range(0,10000):
+DMU= np.zeros((2,2),dtype=complex)
+
+for i in range(0,10):
     ### update time
     time[i] = i*dt
     ### update electric field
@@ -82,8 +85,30 @@ for i in range(0,10000):
         Dtmp[1][0] = D[j][2]
         Dtmp[1][1] = D[j][3]
         
+        Vint[0][0]= 0
+        Vint[0][1]= 0
+        Vint[1][0] = 0
+        Vint[1][1] = 0
+        
+        for k in range(0,N):
+            if k!=j:
+                mutmp[0] = muexp[k][0]
+                mutmp[1] = muexp[k][1]
+                mutmp[2] = muexp[k][2]
+                rtmp = SepVector(coords, k, j)
+                #print("rtmp",rtmp)
+                #print("mutmp",mutmp)
+                Vtmp = DipoleDipole(mu, mutmp, rtmp)
+                Vint[0][1] = Vint[0][1] + Vtmp
+                Vint[1][0] = Vint[1][0] + Vtmp
+        #print("Vint",Vint)
+                
         ### update this DM
         Dtmp = RK4(H0, MUZ, Vint, gamma, Dtmp, dt, dt*i)
+        
+        ### get product of MUZ and Dtmp
+        DMU = np.matmul(Dtmp, MUZ)
+        muexp[j][0] = DMU[0][0] + DMU[1][1]
         
         ### copy back to master D
         D[j][0] = Dtmp[0][0]
@@ -91,12 +116,12 @@ for i in range(0,10000):
         D[j][2] = Dtmp[1][0]
         D[j][3] = Dtmp[1][1]
         
-    r1[i] = np.real(D[0][3])
-    r2[i] = np.real(D[1][3])
-    r3[i] = np.real(D[2][3])
+    r1[i] = np.real(muexp[0][0])
+    r2[i] = np.real(muexp[1][0])
+    r3[i] = np.real(muexp[2][0])
     
     
     
-plt.plot(time, r1, 'red', time, r2, 'blue', time, r3, 'green')
+plt.plot(time, r1, '*')#, time, r2, 'blue') #, time, r3, 'green')
 plt.show()
 
