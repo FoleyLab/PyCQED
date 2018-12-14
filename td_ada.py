@@ -142,6 +142,7 @@ def RK4(H0, mu, Vint, gamma, D, h, t, tau):
     D2 = np.zeros_like(D)
     D3 = np.zeros_like(D)
     D4 = np.zeros_like(D)
+    Df = np.zeros_like(D)
     
     ### Get k1
     H1 = H0 - EField(t, tau)*mu + Vint

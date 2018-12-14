@@ -14,8 +14,8 @@ eps = 0.075
 mu_x = 0.01
 mu_y = 0.001
 mu_z = 0.02
-N = 3
-dt = 0.01
+N = 6
+dt = 0.05
 tau = 150.
 ### Not sure if this is needed r  = np.zeros((N,3))
 
@@ -52,9 +52,12 @@ for i in range(0,N):
 ### coordinates of particle... this instance
 ### the particles are separated by 1.5 Angstroms along 
 ### the x-axis
-coords[0][0] = 0
-coords[1][0] = 2
-coords[2][0] = 4
+coords[0][1] = 0
+coords[1][1] = 0.5
+coords[2][1] = 1.0
+coords[3][1] = 1.5
+coords[4][1] = 2.0
+coords[5][1] = 2.5
 
 mu[0] = mu_x
 mu[1] = mu_y
@@ -62,16 +65,17 @@ mu[2] = mu_z
     
 ### compute center of mass of sysstem    
 R_com = td_ada.COM(coords)
-
-ez = np.zeros(10000)
-time = np.zeros(10000)
-r1 = np.zeros(10000)
-r2 = np.zeros(10000)
-r3 = np.zeros(10000)
+Nsteps = 10000
+ez = np.zeros(Nsteps)
+time = np.zeros(Nsteps)
+r1 = np.zeros(Nsteps)
+r2 = np.zeros(Nsteps)
+r3 = np.zeros(Nsteps)
+p_init = np.ones(Nsteps)
 ### Propagation loop
 DMU= np.zeros((2,2),dtype=complex)
 
-for i in range(0,10):
+for i in range(0,Nsteps):
     ### update time
     time[i] = i*dt
     ### update electric field
@@ -101,11 +105,10 @@ for i in range(0,10):
                 Vtmp = td_ada.DipoleDipole(mu, mutmp, rtmp)
                 Vint[0][1] = Vint[0][1] + Vtmp
                 Vint[1][0] = Vint[1][0] + Vtmp
-        #print("Vint",Vint)
-                
+        #print("Vint",Vint)      
         ### update this DM
         Dtmp = td_ada.RK4(H0, MUZ, Vint, gamma, Dtmp, dt, dt*i, tau)
-        
+        #print(Dtmp) 
         ### get product of MUZ and Dtmp
         DMU = np.matmul(Dtmp, MUZ)
         muexp[j][0] = DMU[0][0] + DMU[1][1]
@@ -115,13 +118,16 @@ for i in range(0,10):
         D[j][1] = Dtmp[0][1]
         D[j][2] = Dtmp[1][0]
         D[j][3] = Dtmp[1][1]
+        #print(D)
         
-    r1[i] = np.real(muexp[0][0])
-    r2[i] = np.real(muexp[1][0])
-    r3[i] = np.real(muexp[2][0])
+    #r1[i] = np.real(muexp[0][0])
+    #r2[i] = np.real(muexp[3][0])
+    #r3[i] = np.real(muexp[4][0])
+    #print(" t, D(t): ",i*dt, np.real(D[0][0]))
+    r1[i] = np.real(D[0][0])
+    r2[i] = np.real(D[3][0])
+    r3[i] = np.real(D[4][0])
     
-    
-    
-plt.plot(time, r1, '*')#, time, r2, 'blue') #, time, r3, 'green')
+plt.plot(time, r1, 'red', time, r2, 'b--', time, r3, 'g--')
 plt.show()
 
