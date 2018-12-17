@@ -15,13 +15,14 @@ mu_x = 0.01
 mu_y = 0.001
 mu_z = 0.02
 N = 6
-dt = 0.05
+dt = 0.5
 tau = 150.
 ### Not sure if this is needed r  = np.zeros((N,3))
 
 ### arrays of vector quantities for each particle
 ### x,y,z position of each particle
 coords = np.zeros((N,3))
+disp_com = np.zeros((N,3))
 ### dipole expectation value of each particle
 muexp = np.zeros((N,3))
 mu = np.zeros(3)
@@ -65,13 +66,23 @@ mu[2] = mu_z
     
 ### compute center of mass of sysstem    
 R_com = td_ada.COM(coords)
+### compute displacement vectors from COM for all atoms
+for i in range(0,N):
+    disp_com[i][0] = coords[i][0] - R_com[0]
+    disp_com[i][1] = coords[i][1] - R_com[1]
+    disp_com[i][2] = coords[i][2] - R_com[2]
+    
 Nsteps = 10000
 ez = np.zeros(Nsteps)
+### array for total dipole moment in COM frame
+mu_of_t = np.zeros(Nsteps,dtype=complex)
+mu_com_temp = 0.+0j
 time = np.zeros(Nsteps)
 r1 = np.zeros(Nsteps)
 r2 = np.zeros(Nsteps)
 r3 = np.zeros(Nsteps)
 p_init = np.ones(Nsteps)
+
 ### Propagation loop
 DMU= np.zeros((2,2),dtype=complex)
 
@@ -112,6 +123,7 @@ for i in range(0,Nsteps):
         ### get product of MUZ and Dtmp
         DMU = np.matmul(Dtmp, MUZ)
         muexp[j][0] = DMU[0][0] + DMU[1][1]
+        mu_com_temp = mu_com_temp + (disp_com[j][0] + muexp[j][0])
         
         ### copy back to master D
         D[j][0] = Dtmp[0][0]
@@ -120,14 +132,23 @@ for i in range(0,Nsteps):
         D[j][3] = Dtmp[1][1]
         #print(D)
         
-    #r1[i] = np.real(muexp[0][0])
-    #r2[i] = np.real(muexp[3][0])
-    #r3[i] = np.real(muexp[4][0])
+    r1[i] = np.real(muexp[0][0])
+    r2[i] = np.real(muexp[3][0])
+    r3[i] = np.real(muexp[4][0])
     #print(" t, D(t): ",i*dt, np.real(D[0][0]))
+    mu_of_t[i] = mu_com_temp
+    '''
     r1[i] = np.real(D[0][0])
     r2[i] = np.real(D[3][0])
     r3[i] = np.real(D[4][0])
+
+    '''
     
-plt.plot(time, r1, 'red', time, r2, 'b--', time, r3, 'g--')
+alpha = np.fft.fft(mu_of_t)
+#omega = np.fft.fftfreq(time)
+
+plt.plot(1/time, alpha, 'red')
 plt.show()
+#plt.plot(time, r1, 'red', time, r2, 'b--', time, r3, 'g--', time, mu_of_t/20., 'black' )
+#plt.show()
 
