@@ -121,7 +121,7 @@ def Hamiltonian(H, t):
 def EField(t, tau):
     Ef = 0.
     if t<tau:
-        Ef = 0.0001*np.sin(t*np.pi/tau)*np.sin(t*np.pi/tau)*np.sin(0.07424*t)
+        Ef = 0.00001*np.sin(t*np.pi/tau)*np.sin(t*np.pi/tau)*np.sin(0.07423*t)
     return Ef
 
 ## Interaction is going to require the coordinates of atom i and atom j
