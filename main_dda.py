@@ -31,9 +31,9 @@ tau = 150.
 coords = np.zeros((N,3))
 disp_com = np.zeros((N,3))
 ### dipole expectation value of each particle
-muexp = np.zeros((N,3))
-mu = np.zeros(3)
-mutmp = np.zeros(3)
+muexp = np.zeros((N,3),dtype=complex)
+mu = np.zeros(3,dtype=complex)
+mutmp = np.zeros(3,dtype=complex)
 rtmp = np.zeros(3)
 ### density matrix of each particle, each
 ### 2x2 DM is unrolled as a vector
@@ -42,7 +42,7 @@ Dtmp = np.zeros((2,2),dtype=complex)
 
 ### Mu matrix - same for each particle
 ### only z-component for now 
-MUZ= np.zeros((2,2))
+MUZ= np.zeros((2,2),dtype=complex)
 MUZ[0][1] = mu_z
 MUZ[1][0] = mu_z
 
@@ -51,7 +51,7 @@ H0 = np.zeros((2,2))
 H0[1][1] = eps
 
 ### Vint matrix - will be computed on the fly
-Vint = np.zeros((2,2))
+Vint = np.zeros((2,2),dtype=complex)
 
 ### initialize each system in its ground state
 for i in range(0,N):
@@ -60,13 +60,13 @@ for i in range(0,N):
 ### coordinates of particle... this instance
 ### the particles are separated by 1.5 Angstroms along 
 ### the x-axis
-coords[0][2] = -18.
-coords[1][2] = -12.
-coords[2][2] = -6
+coords[0][2] = -240.
+coords[1][2] = -160.
+coords[2][2] = -80
 coords[3][2] =  0
-coords[4][2] =  6
-coords[5][2] =  12
-coords[6][2] = 18
+coords[4][2] =  80
+coords[5][2] =  160
+coords[6][2] = 240
 
 mu[0] = mu_x
 mu[1] = mu_y
@@ -126,6 +126,7 @@ for i in range(1,Nsteps):
                 rtmp = td_ada.SepVector(coords, k, j)
                 #print("rtmp",rtmp)
                 #print("mutmp",mutmp)
+                #print("mu ",mu)
                 Vtmp = td_ada.DipoleDipole(mu, mutmp, rtmp)
                 Vint[0][1] = Vint[0][1] + Vtmp
                 Vint[1][0] = Vint[1][0] + Vtmp
@@ -135,8 +136,8 @@ for i in range(1,Nsteps):
         #print(Dtmp) 
         ### get product of MUZ and Dtmp
         DMU = np.matmul(Dtmp, MUZ)
-        muexp[j][0] = DMU[0][0] + DMU[1][1]
-        mu_com_temp = mu_com_temp + (disp_com[j][0] + muexp[j][0])
+        muexp[j][2] = DMU[0][0] + DMU[1][1]
+        mu_com_temp = mu_com_temp + (disp_com[j][2] + muexp[j][2])
         #print("mu_com",mu_com_temp)
         
         ### copy back to master D
@@ -146,9 +147,9 @@ for i in range(1,Nsteps):
         D[j][3] = Dtmp[1][1]
         #print(D)
         
-    r1[i] = np.real(muexp[0][0])
-    r2[i] = np.real(muexp[1][0])
-    #r3[i] = np.real(muexp[4][0])
+    r1[i] = np.real(muexp[0][2])
+    r2[i] = np.real(muexp[1][2])
+    r3[i] = np.real(muexp[2][2])
     #print(" t, D(t): ",i*dt, np.real(D[0][0]))
     mu_of_t[i] = mu_com_temp
     '''
@@ -165,7 +166,7 @@ plt.plot(energy, alpha*np.conj(alpha), 'red')
 plt.xlim(0,0.1)
 #plt.ylim(0,100)
 #plt.show()
-#plt.plot(time, r1, 'red', time, r2, 'b--', time, mu_of_t, 'g--')
+#plt.plot(time, r1, 'red', time, r2, 'b--',time, r3, 'purple', time, mu_of_t, 'g--')
 # time, r3, 'g--', time, mu_of_t/20., 'black' )
 plt.show()
 
