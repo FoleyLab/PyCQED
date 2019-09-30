@@ -160,39 +160,21 @@ def H_Interaction(Psi, g):
                     Hp[i][j] = Hp[i][j] + t2
     
     return Hp
+
+def E_of_R(R):
+    Ai = np.array([0.049244, 0.010657, 0.428129, 0.373005])
+    Bi = np.array([0.18, 0.18, 0.18, 0.147])
+    Ri = np.array([-0.75, 0.85, -1.15, 1.25])
+    Di = np.array([0.073, 0.514])
     
-def RK4(H, D, h, t):
-    k1 = np.zeros_like(D)
-    k2 = np.zeros_like(D)
-    k3 = np.zeros_like(D)
-    k4 = np.zeros_like(D)
-    D1 = np.zeros_like(D)
-    D2 = np.zeros_like(D)
-    D3 = np.zeros_like(D)
-    D4 = np.zeros_like(D)
+    v = Ai + Bi*(R - Ri)**2
     
-    ### Get k1
-    H1 = Hamiltonian(H, t)
-    D1 = D    
-    k1 = h*DDot(H1,D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    Eg = 0.5*(v[0] + v[1]) - np.sqrt(Di[0]**2 + 0.25 * (v[0] - v[1])**2)
+    Ee = 0.5*(v[2] + v[3]) - np.sqrt(Di[1]**2 + 0.25 * (v[2] - v[3])**2)
+    print("Eg is ",Eg)
+    #return [Ai[0],Ai[1]]
+    return [Eg, Ee]
     
-    ### Update H and D and get k2
-    H2 = Hamiltonian(H, t+h/2)
-    D2 = D+k1/2.
-    k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
-    
-    ### UPdate H and D and get k3
-    H3 = H2
-    D3 = D+k2/2
-    k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
-    
-    ### Update H and D and get K4
-    H4 = Hamiltonian(H, t+h)
-    D4 = D+k3
-    k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
-    
-    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
-    return Df
 
 ### Form Basis states
 ### Initialize basis vectors
@@ -206,6 +188,23 @@ for i in range(0,2):
         Psi[1][idx] = j
         idx = idx+1
         
+        
+rlist = np.linspace(-1.5, 1.5, 50)
+
+E_ground = []
+E_excite = []
+for r in rlist:
+    PES = E_of_R(r)
+    E_ground.append(PES[0]*27.211)
+    E_excite.append(PES[1]*27.211)
+    
+plt.plot(rlist, E_ground, 'red')
+plt.plot(rlist, E_excite, 'blue')
+plt.show()
+
+        
+        
+'''
 ### Print basis states for verificatio
 #print(Psi)
 ### Form photon Hamiltonian in basis of Psi
@@ -268,6 +267,7 @@ for i in range(0,Nvals):
 
 plt.plot(ga, c_one, 'black', ga, c_two, 'red', ga, c_three, 'blue', ga, c_four, 'green')
 plt.show()
+'''
 
 '''
 Ntime = 4000
