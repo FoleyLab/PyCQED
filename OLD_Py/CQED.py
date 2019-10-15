@@ -232,6 +232,9 @@ idx = vals.argsort()[::1]
 vals = vals[idx]
 v = vecs[:,idx]
 
+print("idx is ",idx)
+print("vals is ",vals)
+'''
   
 Hdiag = Transform(v, Htot)
 print(Hdiag)
@@ -261,7 +264,7 @@ Psi = np.zeros(4, dtype=complex)
 Psi[1] = np.sqrt(1.)
 #Psi[2] = np.sqrt(1./3)
 #Psi[3] = np.sqrt(1.)
-
+'''
 '''
 print(Psi)
 
@@ -273,7 +276,7 @@ Psi[3] = np.sqrt(3.0/7)+0j
 #Psi[4] = np.sqrt(3.5/10)+0j
 #Psi[5] = np.sqrt(1./10)+0j
 '''
-
+'''
 D = Form_Rho(Psi)
 
 bra_1 = CreateBas(4, 1)
@@ -322,3 +325,4 @@ for i in range(0,len(p1)):
         break
     
 
+'''
