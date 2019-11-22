@@ -303,10 +303,19 @@ def dfdx(ft, xt):
     
     return ftp
 
+def df2dx2(ft, xt):
+    dx = xt[1]-xt[0]
+    ftp = np.zeros(len(ft),dtype=complex)
+    N = len(ft)
+    ftp[0] = 0+0j
+    ftp[N-1]= 0+0j
+    for i in range(1,len(ft)-1):
+        ftp[i] = (ft[i+1] - 2*ft[i] + ft[i-1])/(dx**2)
+    return ftp
+
 ### Kinetic energy operator on wavefunction
 def TPhi(ft, xt, m):
-    ftp = dfdx(ft, xt)
-    ftpp = dfdx(ftp, xt)
+    ftpp = df2dx2(ft, xt)
     return -1/(2*m)*ftpp
 
 ### Get action of Hamiltonian on Phi and multiply by negative i... this

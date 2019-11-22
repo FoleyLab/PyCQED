@@ -21,8 +21,8 @@ ri = np.array([-0.7, -0.6])
 vi = np.array([0.0001282*1.5, 0.0001282*1.2])
 
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
-#M = 1009883/10
-M = 1
+M = 1009883
+#M = 1
 
 ### hbar omega_c in atomic units
 omc = 2.18/27.211 
@@ -31,12 +31,12 @@ gc = 0.136/27.211
 
 
 ### Number of updates for dynamics
-N_time = 500
+N_time = 10000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.1 
 ### time displacement increment for dynamics (a.u.)
-dt = 0.01
+dt = 2
 
 
 ### array of dissipation parameters to be passed to RK4 function
@@ -61,7 +61,7 @@ p_of_t = np.zeros((N_time,4))
     
 ### array of values along the reactive coordinate R that the 
 ### surfaces will be explicitly evaluated at... this is in atomic units
-rlist = np.linspace(-5.0, 5.0, 200)
+rlist = np.linspace(-2.0, 2.0, 300)
 Phit = np.zeros(len(rlist),dtype=complex)
 Phi_traj = np.zeros((len(rlist),N_time),dtype=complex)
 Phi_anal = np.zeros((len(rlist),N_time),dtype=complex)
@@ -98,26 +98,19 @@ Fi_spline = i_spline.derivative()
 g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
 Fg_spline = g_spline.derivative()
 Cg_spline = Fg_spline.derivative()
-#k = Cg_spline(-0.7)
+k = Cg_spline(-0.7)
 
 #print("k is ",k)
-k = 1
+#k = 1
 ci = 0+1j
-phi0 = dh.HO_Func(k, M,  1, rlist, 0)
-Phit = dh.HO_Func(k, M,  1, rlist, 0)
+#phi0 = dh.HO_Func(k, M,  0, rlist, -0.7)*np.exp(ci*1000*rlist)
+Phit = dh.HO_Func(k, M,  10, rlist, -0.7)*np.exp(ci*100*rlist)
 
 
  #*np.exp(ci*0.01*rlist) 
-En = dh.HO_En(k, M, 1)    
-Vx = 1/2 * k * rlist**2
-test = dh.RK4_WP(Vx, M, 0.001, Phit, rlist)
-for i in range(0,400):
-    test = dh.RK4_WP(Vx, M, 0.001, test, rlist)
+#En = dh.HO_En(k, M, 0)    
+#Vx = 1/2 * k * rlist**2
 
-plt.plot(rlist, np.real(test), label='num')
-plt.plot(rlist, np.real(phi0*np.exp(-En*ci*0.4)), 'g--', label='anal')
-plt.legend()
-plt.show()
 
 #plt.plot(rlist, phi0*phi0)
 #plt.plot(rlist, Vx)
@@ -139,16 +132,15 @@ plt.show()
 #D[2,2] = 1.+0j
 #He = dh.H_e(He, ri)
 ### Hamiltonian matrix
-'''
+
 
 for i in range(0,N_time):
     time[i] = i*dt
-    Phi_traj[:,i] = dh.RK4_WP(Vx, M, dt, Phit, rlist)
+    Phi_traj[:,i] = dh.RK4_WP(PPES[:,0], M, dt, Phit, rlist)
     Phit = np.copy(Phi_traj[:,i])
-    Phi_anal[:,i] = phi0*np.exp(-ci*En*dt*i)
+    #Phi_anal[:,i] = phi0*np.exp(-ci*En*dt*i)
     print("i*dt",i*dt)
 
-'''
 '''
 for i in range(0,N_time):
     s = np.random.normal(mu, sigma, 1)
@@ -186,9 +178,9 @@ plt.plot(rlist, 27.211*PPES[:,3], 'r')
 #plt.show()
 '''
 
-'''
+
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(-2, 5))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(-1, 5))
 #ax.set_aspect('equal')
 ax.grid()
 
@@ -211,11 +203,11 @@ def init():
 
 def animate(i):
     thisx = rlist 
-    thisy = Phi_anal[:,i]
-    line.set_data(thisx, thisy)
+    thisy = PPES[:,0]
+    line.set_data(thisx, thisy*27.211)
     thisx = rlist
-    thisy = Phi_traj[:,i]
-    line1.set_data(thisx, thisy)
+    thisy = np.real( Phi_traj[:,i] )
+    line1.set_data(thisx, thisy/10+g_spline(-1.)*27.211)
     #thisx = [r_of_t[i]+0.1]
     #line1.set_data(thisx, thisy)
     #linee1.set_data(rlist, np.real(Phit)+e_of_t[i,0]*27.211)
@@ -226,8 +218,8 @@ def animate(i):
     return line, line1,
 
 ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t)),
-                              interval=dt*0.00001, blit=True, init_func=init)
+                              interval=dt*0.000001, blit=True, init_func=init)
 plt.show()
 
-'''
+
 
