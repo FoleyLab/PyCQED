@@ -21,7 +21,8 @@ ri = np.array([-0.7, -0.6])
 vi = np.array([0.0001282*1.5, 0.0001282*1.2])
 
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
-M = 1009883
+#M = 1009883/10
+M = 1
 
 ### hbar omega_c in atomic units
 omc = 2.18/27.211 
@@ -30,12 +31,12 @@ gc = 0.136/27.211
 
 
 ### Number of updates for dynamics
-N_time = 50000
+N_time = 500
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.1 
 ### time displacement increment for dynamics (a.u.)
-dt = 8
+dt = 0.01
 
 
 ### array of dissipation parameters to be passed to RK4 function
@@ -60,8 +61,10 @@ p_of_t = np.zeros((N_time,4))
     
 ### array of values along the reactive coordinate R that the 
 ### surfaces will be explicitly evaluated at... this is in atomic units
-rlist = np.linspace(-2.0, 2.0, 50)
-
+rlist = np.linspace(-5.0, 5.0, 200)
+Phit = np.zeros(len(rlist),dtype=complex)
+Phi_traj = np.zeros((len(rlist),N_time),dtype=complex)
+Phi_anal = np.zeros((len(rlist),N_time),dtype=complex)
 
 ### Htot
 He = np.zeros((4,4))
@@ -93,7 +96,32 @@ i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,3], k=3)
 Fi_spline = i_spline.derivative()
   
 g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
-Fg_spline = g_spline.derivative()  
+Fg_spline = g_spline.derivative()
+Cg_spline = Fg_spline.derivative()
+#k = Cg_spline(-0.7)
+
+#print("k is ",k)
+k = 1
+ci = 0+1j
+phi0 = dh.HO_Func(k, M,  1, rlist, 0)
+Phit = dh.HO_Func(k, M,  1, rlist, 0)
+
+
+ #*np.exp(ci*0.01*rlist) 
+En = dh.HO_En(k, M, 1)    
+Vx = 1/2 * k * rlist**2
+test = dh.RK4_WP(Vx, M, 0.001, Phit, rlist)
+for i in range(0,400):
+    test = dh.RK4_WP(Vx, M, 0.001, test, rlist)
+
+plt.plot(rlist, np.real(test), label='num')
+plt.plot(rlist, np.real(phi0*np.exp(-En*ci*0.4)), 'g--', label='anal')
+plt.legend()
+plt.show()
+
+#plt.plot(rlist, phi0*phi0)
+#plt.plot(rlist, Vx)
+#plt.show()
 
 ### Plot the surfaces
 '''
@@ -111,11 +139,17 @@ plt.show()
 #D[2,2] = 1.+0j
 #He = dh.H_e(He, ri)
 ### Hamiltonian matrix
-mu, sigma = 0, 0.1 # mean and standard deviation
-s = np.random.normal(mu, sigma, 1)
-print(s[0])
+'''
 
-flag = 1
+for i in range(0,N_time):
+    time[i] = i*dt
+    Phi_traj[:,i] = dh.RK4_WP(Vx, M, dt, Phit, rlist)
+    Phit = np.copy(Phi_traj[:,i])
+    Phi_anal[:,i] = phi0*np.exp(-ci*En*dt*i)
+    print("i*dt",i*dt)
+
+'''
+'''
 for i in range(0,N_time):
     s = np.random.normal(mu, sigma, 1)
     if (s > 0.33):
@@ -142,6 +176,7 @@ for i in range(0,N_time):
     #for j in range(0,4):
     #    p_of_t[i,j] = np.real(D[j,j])
 '''
+'''
 plt.plot(rlist, 27.211*PPES[:,0], 'b')
 plt.plot(rlist, 27.211*PPES[:,1], 'g')
 plt.plot(rlist, 27.211*PPES[:,2], 'y')
@@ -150,17 +185,19 @@ plt.plot(rlist, 27.211*PPES[:,3], 'r')
 #plt.legend()
 #plt.show()
 '''
+
+'''
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(-2, 5))
 #ax.set_aspect('equal')
 ax.grid()
 
-line, = ax.plot([], [], 'o-', lw=2)
-line1, = ax.plot([], [], 'o-', lw=2)
-linee1, = ax.plot([], [], lw=2)
-linep2, = ax.plot([], [], lw=2)
-linep1, = ax.plot([], [], lw=2)
-lineg0, = ax.plot([], [], lw=2)
+line, = ax.plot([], [], lw=2)
+line1, = ax.plot([], [], lw=2)
+#linee1, = ax.plot([], [], lw=2)
+#linep2, = ax.plot([], [], lw=2)
+#linep1, = ax.plot([], [], lw=2)
+#lineg0, = ax.plot([], [], lw=2)
 
 time_template = 'time = %.1fs'
 time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
@@ -173,25 +210,24 @@ def init():
 
 
 def animate(i):
-    thisx = r_of_t[i,:]#[r_of_t[i,0], r_of_t[i,1]]
-    thisy = 27.211*e_of_t[i,:] #[27.211*e_of_t[i,0],27.211*e_of_t[i,1]]
-    #thisx = [r_of_t[i]]
-    #thisy = [27.211*e_of_t[i]]
-    
-    
+    thisx = rlist 
+    thisy = Phi_anal[:,i]
     line.set_data(thisx, thisy)
+    thisx = rlist
+    thisy = Phi_traj[:,i]
+    line1.set_data(thisx, thisy)
     #thisx = [r_of_t[i]+0.1]
     #line1.set_data(thisx, thisy)
-    linee1.set_data(rlist, 27.211*PPES[:,3])
-    linep2.set_data(rlist, 27.211*PPES[:,2])
-    linep1.set_data(rlist, 27.211*PPES[:,1])
-    lineg0.set_data(rlist, 27.211*PPES[:,0])
-    time_text.set_text(time_template % (i*dt))
-    return line, linee1, linep2, linep1, lineg0, time_text
+    #linee1.set_data(rlist, np.real(Phit)+e_of_t[i,0]*27.211)
+    #linep2.set_data(rlist, 27.211*PPES[:,2])
+    #linep1.set_data(rlist, 27.211*PPES[:,1])
+    #lineg0.set_data(rlist, 27.211*PPES[:,0])
+    #time_text.set_text(time_template % (i*dt))
+    return line, line1,
 
 ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t)),
-                              interval=dt*0.01, blit=True, init_func=init)
+                              interval=dt*0.00001, blit=True, init_func=init)
 plt.show()
 
-
+'''
 

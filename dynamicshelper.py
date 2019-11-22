@@ -60,6 +60,33 @@ def Form_Rho(Psi):
     D = np.outer(Psi,np.conj(Psi))
     return D
 
+
+def RK4_WP(Vx, M, h, Phi, xt):
+    k1 = np.zeros_like(Phi)
+    k2 = np.zeros_like(Phi)
+    k3 = np.zeros_like(Phi)
+    k4 = np.zeros_like(Phi)
+    Phi1 = np.zeros_like(Phi)
+    Phi2 = np.zeros_like(Phi)
+    Phi3 = np.zeros_like(Phi)
+    Phi4 = np.zeros_like(Phi)
+    
+    Phi1 = np.copy(Phi)
+    k1 = h*Phi_Dot(Phi1, xt, M, Vx)
+    
+    Phi2 = np.copy(Phi + k1/2)
+    k2 = h*Phi_Dot(Phi2, xt, M, Vx)
+    
+    Phi3 = np.copy(Phi + k2/2)
+    k3 = h*Phi_Dot(Phi3, xt, M, Vx)
+    
+    Phi4 = np.copy(Phi + k3)
+    k4 = h*Phi_Dot(Phi4, xt, M, Vx)
+    
+    Phif = Phi + (1/6.)*(k1 + 2*k2 + 2*k3 + k4)
+    return Phif
+
+
 def RK4(H, D, h, gamma, gam_deph):
     k1 = np.zeros_like(D)
     k2 = np.zeros_like(D)
@@ -321,10 +348,13 @@ def T2_Functional(ft, xt, m):
     return num/denom
 
 
+'''
 hbar = 1
-pi = np.pi
 r0 = -1
+'''
 
+pi = np.pi
+hbar = 1
 def HO_En(K, m, n):
     return np.sqrt(K/m) * (n + 1/2)
 
@@ -347,13 +377,14 @@ def HO_Func(K, m,  n, r, r0):
     
     return psi
 
+'''
 r2 = np.linspace(-1,0,500)
 vx_g0 = 1/2 * k_g0 * (r2-rmin_g0)**2
 psi_g0 = HO_Func(k_g0, M, 0, r2, rmin_g0)
 
 vx_phi2 = 1/2 * k_phi2 * (r2-rmin_phi2)**2
 psi_phi2 = HO_Func(k_phi2, M, 0, r2, rmin_phi2)
-
+'''
 
 
 
