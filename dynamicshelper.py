@@ -244,4 +244,21 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
     ### return a list with new position and velocity
     return [r_fut, v_fut, D]
+
+def VelocityVerlet(spline,  mass, r_curr, v_curr, dt):
+    ### compute acceleration ... first we need force
+    F_curr = -1 * spline(r_curr)
+    ### now get acceleration from a = F/m
+    a_curr = F_curr / mass
+    ### now get r in the future... r_fut
+    r_fut = r_curr + v_curr*dt + 1/2 * a_curr*dt**2
+    ### now get the future force: -d/dr E(r_fut)
+    F_fut = -1 * spline(r_fut)
+    ### now that I have new Force, compute new acceleration
+    a_fut = F_fut / mass
+    ### now that I have acceleration in the future, let me calculate velocity 
+    ### in the future
+    v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+    ### return a list with new position and velocity
+    return [r_fut, v_fut]
     
