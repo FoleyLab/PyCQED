@@ -8,6 +8,7 @@ Created on Thu Nov 21 14:58:08 2019
 import numpy as np
 from numpy import linalg as LA
 import math
+from numpy.polynomial.hermite import *
 
 ''' For the Hamiltonians '''
 ### Function to return the ground and excited-state electronic energy as a function of
@@ -261,4 +262,108 @@ def VelocityVerlet(spline,  mass, r_curr, v_curr, dt):
     v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
     ### return a list with new position and velocity
     return [r_fut, v_fut]
+
+def dfdx(ft, xt):
+    dx = xt[1]-xt[0]
+    ftp = np.zeros_like(ft)
+    for i in range(0,len(ft)):
+        if (i<(len(ft)-1)):
+            rise = ft[i+1]-ft[i]
+            ftp[i] = rise/dx
+        else:
+            rise = ft[i]-ft[i-1]
+            ftp[i] = rise/dx
+    
+    return ftp
+
+### Kinetic energy operator on wavefunction
+def TPhi(ft, xt, m):
+    ftp = dfdx(ft, xt)
+    ftpp = dfdx(ftp, xt)
+    return -1/(2*m)*ftpp
+
+### Get action of Hamiltonian on Phi and multiply by negative i... this
+### gives time-derivative of Phi
+def Phi_Dot(ft, xt, m, vx):
+    ci = 0+1j
+    return -1*ci*(TPhi(ft, xt, m) + vx*ft)
+
+### Kinetic energy squared operator
+def T2Phi(ft, xt, m):
+    ftp = dfdx(ft, xt)
+    ftpp = dfdx(ftp, xt)
+    ftppp = dfdx(ftpp, xt)
+    ftpppp = dfdx(ftppp, xt)
+    return 1/(4*m*m)*ftpppp
+
+### returns the kinetic energy functional of a trial
+### wavefunction (called ft within the function)
+def T_Functional(ft, xt, m):
+    tphi = TPhi(ft, xt, m)
+    dx = xt[1] - xt[0]
+    num = 0
+    denom = 0
+    for i in range(0, len(ft)):
+        num = num + ft[i]*tphi[i]*dx
+        denom = denom + ft[i]*ft[i]*dx
+
+    return num/denom
+
+def T2_Functional(ft, xt, m):
+    t2phi = T2Phi(ft, xt, m)
+    dx = xt[1] - xt[0]
+    num = 0
+    denom = 0
+    for i in range(0, len(ft)):
+        num = num + ft[i]*t2phi[i]*dx
+        denom = denom + ft[i]*ft[i]*dx
+
+    return num/denom
+
+
+hbar = 1
+pi = np.pi
+r0 = -1
+
+def HO_En(K, m, n):
+    return np.sqrt(K/m) * (n + 1/2)
+
+
+def HO_Func(K, m,  n, r, r0):
+    w = np.sqrt(K/m)
+    psi = []
+    herm_coeff = []
+    
+    for i in range(n):
+        herm_coeff.append(0)
+        
+    herm_coeff.append(1)
+    
+    for x in r:
+        psi.append(math.exp(-m*w*(x-r0)**2/(2*hbar)) * hermval((m*w/hbar)**0.5 * (x-r0), herm_coeff))
+        
+    # normalization factor for the wavefunction:
+    psi = np.multiply(psi, 1 / (math.pow(2, n) * math.factorial(n))**0.5 * (m*w/(pi*hbar))**0.25)
+    
+    return psi
+
+r2 = np.linspace(-1,0,500)
+vx_g0 = 1/2 * k_g0 * (r2-rmin_g0)**2
+psi_g0 = HO_Func(k_g0, M, 0, r2, rmin_g0)
+
+vx_phi2 = 1/2 * k_phi2 * (r2-rmin_phi2)**2
+psi_phi2 = HO_Func(k_phi2, M, 0, r2, rmin_phi2)
+
+
+
+
+def Fourier(x, fx, n, k, m, r0):
+    tfn = HO_Func(k, m, n, x, r0)
+    som = 0
+    dx = x[1]-x[0]
+    for i in range(0,len(x)):
+        som = som + fx[i] * tfn[i] * dx
+    return som
+
+
     
