@@ -17,8 +17,10 @@ gam_diss_m = 0.00000
 gam_deph = 0.0000
 
 ### Initial position, velocity, timestep, and R-step for dynamics
-ri = np.array([-0.7, -0.6])
-vi = np.array([0.0001282*1.5, 0.0001282*1.2])
+#ri = np.array([-0.7, -0.6])
+#vi = np.array([0.0001282*1.5, 0.0001282*1.2])
+ri = np.array([-0.7])
+vi = np.array([0.0001282*3])
 
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
@@ -33,7 +35,7 @@ gc = 0.136/27.211
 N_time = 50000
 
 ### position displacement increment for dynamics (a.u.)
-dr = 0.1 
+dr = 0.01 
 ### time displacement increment for dynamics (a.u.)
 dt = 8
 
@@ -50,9 +52,14 @@ gamma[3] = gam_diss_m+gam_diss_np
 ### various arrays for dynamics
 
 time = np.zeros(N_time)
-r_of_t = np.zeros((N_time,2))
-v_of_t = np.zeros((N_time,2))
-e_of_t = np.zeros((N_time,2))
+r_of_t = np.zeros((N_time,1))
+hf_error_of_t = np.zeros((N_time, 1))
+tot_error_of_t = np.zeros((N_time, 1))
+
+oo = np.zeros((N_time, 1))
+tt = np.zeros((N_time, 1))
+v_of_t = np.zeros((N_time,1))
+e_of_t = np.zeros((N_time,1))
 p_of_t = np.zeros((N_time,4))
 
 ''' The following parameters and arrays pertain 
@@ -89,7 +96,7 @@ for i in range(0,len(rlist)):
         PPES[i,j] = vals[j]
         
 ### form spline for ground-state surface
-i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,3], k=3)
+i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,1], k=3)
 Fi_spline = i_spline.derivative()
   
 g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
@@ -107,8 +114,8 @@ plt.show()
 '''
 
 ### density matrix
-#D = np.zeros((4,4),dtype=complex)
-#D[2,2] = 1.+0j
+D = np.zeros((4,4),dtype=complex)
+D[1,1] = 1.+0j
 #He = dh.H_e(He, ri)
 ### Hamiltonian matrix
 mu, sigma = 0, 0.1 # mean and standard deviation
@@ -124,31 +131,39 @@ for i in range(0,N_time):
     #### Update nuclear coordinate first
     time[i] = i*dt
     #res = dh.Erhenfest(ri, vi, M, D, Hp, Hep, He, gamma, gam_deph, dr, dt)
-    if flag==1:
-        res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
-    else:
-        res = dh.VelocityVerlet(Fg_spline, M, ri, vi, dt)
+    #if flag==1:
+    res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
+    hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, D)
+    #res_force = dh.Dp_Force(Hp, Hep, He, ri[0], dr, D)
+    hf_error_of_t[i,:] = (hf_force-Fi_spline(ri[0]))/Fi_spline(ri[0])
+    #tot_error_of_t[i,:] = (res_force+hf_force)-Fi_spline(ri[0])
+    #print(" Difference between HF and spline force is ",hf_force-Fi_spline(ri[0]))
+    #else:
+    #res = dh.VelocityVerlet(Fg_spline, M, ri, vi, dt)
     ri = res[0]
     vi = res[1]
     r_of_t[i,:] = ri
     v_of_t[i,:] = vi
     #D = res[2]
     #Htot = dh.H_e(He, ri) + Hp + Hep
-    if flag==1:
-        e_of_t[i,:] = i_spline(ri)
-    else:
-        e_of_t[i,:] = g_spline(ri)
+    #if flag==1:
+    e_of_t[i,:] = i_spline(ri)
+    #else:
+    #e_of_t[i,:] = g_spline(ri)
     #dh.TrHD(Htot, D)
     #for j in range(0,4):
     #    p_of_t[i,j] = np.real(D[j,j])
-'''
+
+plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
+#plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
 plt.plot(rlist, 27.211*PPES[:,0], 'b')
-plt.plot(rlist, 27.211*PPES[:,1], 'g')
+plt.plot(rlist, 27.211*PPES[:,1], 'r')
 plt.plot(rlist, 27.211*PPES[:,2], 'y')
 plt.plot(rlist, 27.211*PPES[:,3], 'r')
 #plt.plot(r_of_t, 27.211*e_of_t, 'red', label='Trajectory')
-#plt.legend()
-#plt.show()
+plt.legend()
+plt.show()
+
 '''
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
@@ -193,5 +208,5 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t)),
                               interval=dt*0.01, blit=True, init_func=init)
 plt.show()
 
-
+'''
 

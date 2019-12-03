@@ -52,9 +52,47 @@ def H_ep(Hmat, g):
     return Hmat
 ''' The following functions are helpers for the quantum and classical dynamics '''
 
+''' Hellman-Feynman contribution to force...
+    H0 is H_p + H_ep (they don't depend on R) and He does depend 
+    on R '''
+def HF_Force(Hp, Hep, He, r, dr, D):
+    #H0 = Hp + Hep
+    ### get forward Hamiltonian
+    #He = H_e(He, r+dr)
+    #def Transform_L_to_P(r, Dl, Hp, Hep):
+    [Hf, Df, v] = Transform_L_to_P(r+dr, D, Hp, Hep)
+    #print(Hf[0,0], Hf[1,1], Hf[2,2], Hf[3,3])
+    [Hb, Db, v] = Transform_L_to_P(r-dr, D, Hp, Hep)
+    
+    ### return Hpl and Dpl
+    #return [Hpl, Dpl, v]
+    
+    
+    #Hf = np.copy(H0+He)
+    #### get backwards Hamilonian
+    #He = H_e(He, r-dr)
+    #Hb = np.copy(H0+He)
+    Hprime = (Hf - Hb)/(2*dr)
+    #[Ht, Dl, vec] = Transform_P_to_L(r, D, Hp, Hep)
+    hf_force = TrHD(Hprime, D)
+    #ef Transform_P_to_L(r, Dp, Hp, Hep):
+    return hf_force
+
+def Dp_Force(Hp, Hep, He, r, dr, D):
+    [Ht, Df, vec] = Transform_P_to_L(r+dr, D, Hp, Hep)
+    [Ht, Db, vec] = Transform_P_to_L(r-dr, D, Hp, Hep)
+    He = H_e(He, r)
+    Htot = Hp + He + Hep
+    Dprime = (Df - Db)/(2*dr)
+    residual_force = TrHD(Htot, Dprime)
+    return residual_force
+    
+    
+
 ''' Quantum dynamics first '''
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
+
 def Form_Rho(Psi):
 
     D = np.outer(Psi,np.conj(Psi))
