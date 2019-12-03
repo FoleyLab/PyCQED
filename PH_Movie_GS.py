@@ -32,7 +32,7 @@ gc = 0.136/27.211
 
 
 ### Number of updates for dynamics
-N_time = 50000
+N_time = 5000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
@@ -113,9 +113,13 @@ plt.ylim(0,10)
 plt.show()
 '''
 
-### density matrix
-D = np.zeros((4,4),dtype=complex)
-D[1,1] = 1.+0j
+### density matrix in polariton basis!
+Dpl = np.zeros((4,4),dtype=complex)
+Dpl[1,1] = 1.+0j
+[Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
+print(Dl)
+HD = np.dot(Ht,Dl)
+print(Ht)
 #He = dh.H_e(He, ri)
 ### Hamiltonian matrix
 mu, sigma = 0, 0.1 # mean and standard deviation
@@ -133,7 +137,7 @@ for i in range(0,N_time):
     #res = dh.Erhenfest(ri, vi, M, D, Hp, Hep, He, gamma, gam_deph, dr, dt)
     #if flag==1:
     res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
-    hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, D)
+    hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, Dpl)
     #res_force = dh.Dp_Force(Hp, Hep, He, ri[0], dr, D)
     hf_error_of_t[i,:] = (hf_force-Fi_spline(ri[0]))/Fi_spline(ri[0])
     #tot_error_of_t[i,:] = (res_force+hf_force)-Fi_spline(ri[0])
@@ -156,10 +160,10 @@ for i in range(0,N_time):
 
 plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
 #plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
-plt.plot(rlist, 27.211*PPES[:,0], 'b')
-plt.plot(rlist, 27.211*PPES[:,1], 'r')
-plt.plot(rlist, 27.211*PPES[:,2], 'y')
-plt.plot(rlist, 27.211*PPES[:,3], 'r')
+#plt.plot(rlist, 27.211*PPES[:,0], 'b')
+#plt.plot(rlist, 27.211*PPES[:,1], 'r')
+#plt.plot(rlist, 27.211*PPES[:,2], 'y')
+#plt.plot(rlist, 27.211*PPES[:,3], 'r')
 #plt.plot(r_of_t, 27.211*e_of_t, 'red', label='Trajectory')
 plt.legend()
 plt.show()

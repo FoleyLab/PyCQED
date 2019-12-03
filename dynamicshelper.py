@@ -56,7 +56,7 @@ def H_ep(Hmat, g):
     H0 is H_p + H_ep (they don't depend on R) and He does depend 
     on R '''
 def HF_Force(Hp, Hep, He, r, dr, D):
-    #H0 = Hp + Hep
+    H0 = Hp + Hep
     ### get forward Hamiltonian
     #He = H_e(He, r+dr)
     #def Transform_L_to_P(r, Dl, Hp, Hep):
