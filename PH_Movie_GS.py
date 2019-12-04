@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.0000
+gam_diss_np = 0.00002
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -39,6 +39,8 @@ dr = 0.01
 ### time displacement increment for dynamics (a.u.)
 dt = 0.1
 
+### initial polariton state
+pn = 2
 
 ### array of dissipation parameters to be passed to RK4 function
 gamma = np.zeros(4)
@@ -115,7 +117,7 @@ plt.show()
 
 ### density matrix in polariton basis!
 Dpl = np.zeros((4,4),dtype=complex)
-Dpl[3,3] = 1.+0j
+Dpl[pn,pn] = 1.+0j
 [Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
 print(Dl)
 HD = np.dot(Ht,Dl)
@@ -146,12 +148,21 @@ for i in range(0,N_time):
     #if flag==1:
     e_of_t[i,:] = res[2] #i_spline(ri)
     Dl = res[3]
+    p_of_t[i,0] = np.real(Dl[0,0])
+    p_of_t[i,1] = np.real(Dl[1,1])
+    p_of_t[i,2] = np.real(Dl[2,2])
+    p_of_t[i,3] = np.real(Dl[3,3]) #= np.zeros((N_time,4))
     #else:
     #e_of_t[i,:] = g_spline(ri)
     #dh.TrHD(Htot, D)
     #for j in range(0,4):
     #    p_of_t[i,j] = np.real(D[j,j])
 
+plt.plot(time, p_of_t[:,0], 'r')
+plt.plot(time, p_of_t[:,1], 'y')
+plt.plot(time, p_of_t[:,2], 'g')
+plt.plot(time, p_of_t[:,3], 'b')
+plt.show()
 #plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
 #plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
 #plt.plot(rlist, 27.211*PPES[:,0], 'b')
