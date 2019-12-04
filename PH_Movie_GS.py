@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.000005
+gam_diss_np = 0.0000
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -20,7 +20,7 @@ gam_deph = 0.0000
 #ri = np.array([-0.7, -0.6])
 #vi = np.array([0.0001282*1.5, 0.0001282*1.2])
 ri = np.array([-0.7])
-vi = np.array([0.0001282*3])
+vi = np.array([0.0001282*1.5])
 
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
@@ -32,12 +32,12 @@ gc = 0.136/27.211
 
 
 ### Number of updates for dynamics
-N_time = 5000
+N_time = 500000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
 ### time displacement increment for dynamics (a.u.)
-dt = 8
+dt = 0.1
 
 
 ### array of dissipation parameters to be passed to RK4 function
@@ -115,60 +115,54 @@ plt.show()
 
 ### density matrix in polariton basis!
 Dpl = np.zeros((4,4),dtype=complex)
-Dpl[1,1] = 1.+0j
+Dpl[3,3] = 1.+0j
 [Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
 print(Dl)
 HD = np.dot(Ht,Dl)
 print(Ht)
-#He = dh.H_e(He, ri)
-### Hamiltonian matrix
-mu, sigma = 0, 0.1 # mean and standard deviation
-s = np.random.normal(mu, sigma, 1)
-print(s[0])
+
 
 flag = 1
 for i in range(0,N_time):
-    s = np.random.normal(mu, sigma, 1)
-    if (s > 0.33):
-        flag = 0
-    #print(s[0])
     #### Update nuclear coordinate first
     time[i] = i*dt
-    #res = dh.Erhenfest(ri, vi, M, D, Hp, Hep, He, gamma, gam_deph, dr, dt)
+    res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
+    ri = res[0]
+    vi = res[1]
     #if flag==1:
-    res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
-    hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, Dpl)
+    #res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
+    #hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, Dpl)
     #res_force = dh.Dp_Force(Hp, Hep, He, ri[0], dr, D)
-    hf_error_of_t[i,:] = (hf_force-Fi_spline(ri[0]))/Fi_spline(ri[0])
+    #hf_error_of_t[i,:] = (hf_force-Fi_spline(ri[0]))/Fi_spline(ri[0])
     #tot_error_of_t[i,:] = (res_force+hf_force)-Fi_spline(ri[0])
     #print(" Difference between HF and spline force is ",hf_force-Fi_spline(ri[0]))
     #else:
     #res = dh.VelocityVerlet(Fg_spline, M, ri, vi, dt)
-    ri = res[0]
-    vi = res[1]
+
     r_of_t[i,:] = ri
     v_of_t[i,:] = vi
     #D = res[2]
     #Htot = dh.H_e(He, ri) + Hp + Hep
     #if flag==1:
-    e_of_t[i,:] = i_spline(ri)
+    e_of_t[i,:] = res[2] #i_spline(ri)
+    Dl = res[3]
     #else:
     #e_of_t[i,:] = g_spline(ri)
     #dh.TrHD(Htot, D)
     #for j in range(0,4):
     #    p_of_t[i,j] = np.real(D[j,j])
 
-plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
+#plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
 #plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
 #plt.plot(rlist, 27.211*PPES[:,0], 'b')
 #plt.plot(rlist, 27.211*PPES[:,1], 'r')
 #plt.plot(rlist, 27.211*PPES[:,2], 'y')
 #plt.plot(rlist, 27.211*PPES[:,3], 'r')
 #plt.plot(r_of_t, 27.211*e_of_t, 'red', label='Trajectory')
-plt.legend()
-plt.show()
+#plt.legend()
+#plt.show()
 
-'''
+
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
 #ax.set_aspect('equal')
@@ -208,9 +202,8 @@ def animate(i):
     time_text.set_text(time_template % (i*dt))
     return line, linee1, linep2, linep1, lineg0, time_text
 
-ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t)),
+ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
                               interval=dt*0.01, blit=True, init_func=init)
 plt.show()
 
-'''
 

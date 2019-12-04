@@ -257,10 +257,45 @@ def Transform_P_to_L(r, Dp, Hp, Hep):
     ### return Hpl and Dpl
     return [Htot, Dl, v]
 
+def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
+    ### get H and D in polariton basis at r_curr at t_curr
+    [Hpl, Dpl, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
+    ### get derivative of Hpl at r_curr
+    [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
+    [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
+    Hprime = (Hf-Hb)/(2*dr)
+    ### get force from Hellman-Feynman theorem
+    F_curr = TrHD(Hprime, Dpl)
+    ### get acceleration
+    a_curr = -1 * F_curr / mass
+    ### update position
+    r_fut = r_curr + v_curr*dt + 1/2 * a_curr*dt**2
+    ### get H in local basis at r_fut
+    Hel = H_e(Hel, r_fut)
+    Hl = Hel + Hp + Hep
+    ### Update density matrix in local basis
+    Dl = RK4(Hl, Dl, dt, gamma, gam_deph)
+    ### Get H and D in polariton basis at r_fut and t_fut
+    [Hpl, Dpl, v] = Transform_L_to_P(r_fut, Dl, Hp, Hep)
+    ### get derivative of Hpl at r_fut
+    [Hf, Df, v] = Transform_L_to_P(r_fut+dr, Dl, Hp, Hep)
+    [Hb, Df, v] = Transform_L_to_P(r_fut-dr, Dl, Hp, Hep)
+    Hprime = (Hf-Hb)/(2*dr)
+    ### get force from Hellman-Feynman theorem
+    F_fut = TrHD(Hprime, Dpl)
+    ### get energy at r_fut
+    E_fut = TrHD(Hpl, Dpl)
+    ### get acceleration
+    a_fut = -1 * F_fut / mass
+    ### get updated velocity
+    v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+    
+    return [r_fut, v_fut, E_fut, Dl]
 
+'''
 def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
 
-    ''' Electronic part 1 '''
+    ### Electronic part 1 ###
     ### Get forward-displaced electronic Hamiltonian
     Hel = H_e(Hel, r_curr+dr)
     Hf = Hp + Hep + Hel
@@ -275,7 +310,7 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     ### Get back-displaced energy
     Eb = TrHD(Hb, D)
     
-    ''' Nuclear part 1'''
+    ###  Nuclear part 1 ###
     ### Get force from finite-difference gradient
     F = (Eb - Ef)/(2*dr)
     ### Get acceleration from force
@@ -283,7 +318,7 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     ### now get r in the future... r_fut
     r_fut = r_curr + v_curr*dt + 1/2 * a_curr*dt**2
     
-    ''' Electronic part 2 '''
+    ###  Electronic part 2 ###
     ### now update electronic Hamiltonian
     Hel = H_e(Hel, r_fut+dr)
     Hf = Hp + Hep + Hel
@@ -302,7 +337,7 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     ### Get back-displaced energy
     Eb = TrHD(Hb, D)
     
-    ''' Nuclear part 2'''
+    ###Nuclear part 2###
     ### Get force from finite-difference gradient
     F = (Eb - Ef)/(2*dr)
     ### Get acceleration from force
@@ -310,6 +345,7 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
     ### return a list with new position and velocity
     return [r_fut, v_fut, D]
+'''
 
 def VelocityVerlet(spline,  mass, r_curr, v_curr, dt):
     ### compute acceleration ... first we need force
