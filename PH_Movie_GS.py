@@ -26,9 +26,9 @@ au_to_ps = 2.4188e-17 * 1e12
 M = 1009883
 
 ### hbar omega_c in atomic units
-omc = 2.18/27.211 
+omc = 2.45/27.211 
 ### hbar g_c in atomic units
-gc = 0.136/27.211
+gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
