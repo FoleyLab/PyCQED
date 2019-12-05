@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.00002
+gam_diss_np = 0.00005
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -21,7 +21,7 @@ gam_deph = 0.0000
 #vi = np.array([0.0001282*1.5, 0.0001282*1.2])
 ri = np.array([-0.7])
 vi = np.array([0.0001282*1.5])
-
+au_to_ps = 2.4188e-17 * 1e12
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
 
@@ -158,10 +158,10 @@ for i in range(0,N_time):
     #for j in range(0,4):
     #    p_of_t[i,j] = np.real(D[j,j])
 
-plt.plot(time, p_of_t[:,0], 'r')
-plt.plot(time, p_of_t[:,1], 'y')
-plt.plot(time, p_of_t[:,2], 'g')
-plt.plot(time, p_of_t[:,3], 'b')
+plt.plot(time*au_to_ps, p_of_t[:,0], 'r')
+plt.plot(time*au_to_ps, p_of_t[:,1], 'y')
+plt.plot(time*au_to_ps, p_of_t[:,2], 'g')
+plt.plot(time*au_to_ps, p_of_t[:,3], 'b')
 plt.show()
 #plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
 #plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
@@ -186,8 +186,8 @@ linep2, = ax.plot([], [], lw=2)
 linep1, = ax.plot([], [], lw=2)
 lineg0, = ax.plot([], [], lw=2)
 
-time_template = 'time = %.1fs'
-time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
+time_template = 'time = %.1e ps'
+time_text = ax.text(0.05, 0.02, '', transform=ax.transAxes)
 
 
 def init():
@@ -210,11 +210,11 @@ def animate(i):
     linep2.set_data(rlist, 27.211*PPES[:,2])
     linep1.set_data(rlist, 27.211*PPES[:,1])
     lineg0.set_data(rlist, 27.211*PPES[:,0])
-    time_text.set_text(time_template % (i*dt))
+    time_text.set_text(time_template % (i*dt * au_to_ps))
     return line, linee1, linep2, linep1, lineg0, time_text
 
 ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
-                              interval=dt*0.01, blit=True, init_func=init)
+                              interval=dt, blit=True, init_func=init)
 plt.show()
 
 
