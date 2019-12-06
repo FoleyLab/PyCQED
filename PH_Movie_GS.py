@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.00005
+gam_diss_np = 0.000001 #5
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -19,8 +19,11 @@ gam_deph = 0.0000
 ### Initial position, velocity, timestep, and R-step for dynamics
 #ri = np.array([-0.7, -0.6])
 #vi = np.array([0.0001282*1.5, 0.0001282*1.2])
-ri = np.array([-0.7])
-vi = np.array([0.0001282*1.5])
+
+ri_val = -0.6615679318398704 
+vi_val = 3.33752906715916e-05
+ri = np.array([ri_val])
+vi = np.array([vi_val])
 au_to_ps = 2.4188e-17 * 1e12
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
@@ -32,7 +35,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 500000
+N_time = 1500000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
@@ -116,12 +119,14 @@ plt.show()
 '''
 
 ### density matrix in polariton basis!
-Dpl = np.zeros((4,4),dtype=complex)
-Dpl[pn,pn] = 1.+0j
-[Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
-print(Dl)
-HD = np.dot(Ht,Dl)
-print(Ht)
+Dl = np.zeros((4,4),dtype=complex)
+Dl[pn,pn] = 1.+0j
+
+
+#[Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
+#print(Dl)
+#HD = np.dot(Ht,Dl)
+#print(Ht)
 
 
 flag = 1
@@ -218,3 +223,48 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
 plt.show()
 
 
+
+
+
+#import numpy as np
+#from matplotlib import pyplot as plt
+
+''' get reasonable starting positions and velocities!
+k = 0.31246871517560126
+M = 1009883
+
+a = np.sqrt(k*M)
+
+x = np.linspace(-0.5,0.5,500)
+N = (a/np.pi)**(1/4.)
+sig = np.sqrt(1/(2*a))
+pre = 1/(sig * np.sqrt(2*np.pi))
+
+psi0 = N * np.exp(-a/2 * x**2)
+g = pre * np.exp(-0.5 * (x/sig)**2)
+
+xf = np.linspace(-sig, sig, 100)
+f = 0*xf + 7
+#plt.plot(x, psi0, 'red')
+plt.plot(x, psi0**2, 'blue')
+plt.plot(x, g, 'r--')
+plt.plot(xf, f, 'green')
+
+p_unc = np.sqrt(a - a**2 * np.sqrt(np.pi)/(2*a**(3/2)))
+v_unc = p_unc / M
+print("Momentum uncertainty",p_unc)
+print("Velocity uncertainty",p_unc/M)
+
+from random import seed
+from random import gauss
+# seed random number generator
+seed(1)
+# generate some Gaussian values
+for _ in range(10):
+    value_x = gauss(-0.7, sig)
+    value_p = gauss(0, v_unc)
+    print(value_x, value_p)
+    
+    '''
+plt.show()
+print(sig)
