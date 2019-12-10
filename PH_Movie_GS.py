@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.000001 #5
+gam_diss_np = 0.00000 #1 #5
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -35,7 +35,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 1500000
+N_time = 15000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
@@ -222,7 +222,7 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
                               interval=dt, blit=True, init_func=init)
 plt.show()
 
-
+#ani.save('test.mp4')
 
 
 
