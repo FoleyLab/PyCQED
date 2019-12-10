@@ -35,7 +35,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 15000
+N_time = 1500000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
@@ -156,7 +156,13 @@ for i in range(0,N_time):
     p_of_t[i,0] = np.real(Dl[0,0])
     p_of_t[i,1] = np.real(Dl[1,1])
     p_of_t[i,2] = np.real(Dl[2,2])
-    p_of_t[i,3] = np.real(Dl[3,3]) #= np.zeros((N_time,4))
+    p_of_t[i,3] = np.real(Dl[3,3])
+    
+    if (i==1240284):
+        Dl = np.zeros((4,4),dtype=complex)
+        Dl[0,0] = 1+0j
+    
+    #= np.zeros((N_time,4))
     #else:
     #e_of_t[i,:] = g_spline(ri)
     #dh.TrHD(Htot, D)
