@@ -35,12 +35,12 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 1500000
+N_time = 50000 #00
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
 ### time displacement increment for dynamics (a.u.)
-dt = 0.1
+dt = 0.5
 
 ### initial polariton state
 pn = 2
@@ -133,7 +133,8 @@ flag = 1
 for i in range(0,N_time):
     #### Update nuclear coordinate first
     time[i] = i*dt
-    res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
+    #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
+    res = dh.FSSH_Update(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
     ri = res[0]
     vi = res[1]
     #if flag==1:
@@ -153,14 +154,15 @@ for i in range(0,N_time):
     #if flag==1:
     e_of_t[i,:] = res[2] #i_spline(ri)
     Dl = res[3]
+    pn = res[4]
     p_of_t[i,0] = np.real(Dl[0,0])
     p_of_t[i,1] = np.real(Dl[1,1])
     p_of_t[i,2] = np.real(Dl[2,2])
     p_of_t[i,3] = np.real(Dl[3,3])
     
-    if (i==1240284):
-        Dl = np.zeros((4,4),dtype=complex)
-        Dl[0,0] = 1+0j
+    #if (i==1240284):
+    #    Dl = np.zeros((4,4),dtype=complex)
+    #    Dl[0,0] = 1+0j
     
     #= np.zeros((N_time,4))
     #else:

@@ -92,11 +92,11 @@ def Dp_Force(Hp, Hep, He, r, dr, D):
 ''' Quantum dynamics first '''
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
+def Form_Rho(Psii, Psij):
 
-def Form_Rho(Psi):
-
-    D = np.outer(Psi,np.conj(Psi))
+    D = np.outer(Psii,np.conj(Psij))
     return D
+
 
 
 def RK4_WP(Vx, M, h, Phi, xt):
@@ -154,6 +154,38 @@ def RK4(H, D, h, gamma, gam_deph):
     Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
     return Df
 
+
+
+def RK4_NA(H, D, h, gamma, gam_deph, V, dc):
+    ci = 1+0j
+    k1 = np.zeros_like(D)
+    k2 = np.zeros_like(D)
+    k3 = np.zeros_like(D)
+    k4 = np.zeros_like(D)
+    D1 = np.zeros_like(D)
+    D2 = np.zeros_like(D)
+    D3 = np.zeros_like(D)
+    D4 = np.zeros_like(D)
+    
+    ### Get k1
+    D1 = np.copy(D)    
+    k1 = h*DDot(H,D1) - ci*h*V*DDot(dc, D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    
+    ### Update H and D and get k2
+    D2 = np.copy(D+k1/2.)
+    k2 = h*DDot(H, D2) - ci*h*V*DDot(dc, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
+    
+    ### UPdate H and D and get k3
+    D3 = np.copy(D+k2/2)
+    k3 = h*DDot(H, D3) - ci*h*V*DDot(dc, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
+    
+    ### Update H and D and get K4
+    D4 = np.copy(D+k3)
+    k4 = h*DDot(H, D4) - ci*h*V*DDot(dc, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
+    
+    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
+    return Df
+
 ### Lindblad operator that models dephasing
 def L_Deph(D, gam):
     dim = len(D)
@@ -161,7 +193,7 @@ def L_Deph(D, gam):
     
     for k in range(1,dim):
         bra_k = CreateBas(dim, k)
-        km = Form_Rho(bra_k)
+        km = Form_Rho(bra_k, bra_k)
         
         ### first term 2*gam*<k|D|k>|k><k|
         t1 = 2*gam*D[k][k]*km
@@ -172,6 +204,8 @@ def L_Deph(D, gam):
         LD = LD + t1 - gam*t2 - gam*t3
         
     return LD
+
+
 
 ### Creates basis vector for state k
 ### k=0 -> ground state, k=1 -> first excited-state, etc
@@ -186,12 +220,12 @@ def L_Diss(D, gamma):
     LD = np.zeros_like(D)
     ### need |g><g|
     bra_1 = CreateBas(dim, 0)
-    gm = Form_Rho(bra_1)
+    gm = Form_Rho(bra_1, bra_1)
     
     for k in range(1,dim):
         gam = gamma[k]
         bra_k = CreateBas(dim, k)
-        km = Form_Rho(bra_k)
+        km = Form_Rho(bra_k, bra_k)
         
         ### first term 2*gam*<k|D|k>|g><g|
         t1 = 2*gam*D[k][k]*gm
@@ -264,6 +298,8 @@ def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt
     [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
     [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
     Hprime = (Hf-Hb)/(2*dr)
+    
+    #print("derivative coupling matrix:",Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl))
     ### get force from Hellman-Feynman theorem
     F_curr = TrHD(Hprime, Dpl)
     ### get acceleration
@@ -292,6 +328,96 @@ def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt
     
     return [r_fut, v_fut, E_fut, Dl]
 
+
+
+def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
+    dim = len(Dl)
+    ### Get density matrix for active state
+    Psi_act = CreateBas(dim, act_idx)
+    D_act = Form_Rho(Psi_act, Psi_act)
+    ### Get nuclear force on the active state
+    [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
+    [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
+    Hprime = (Hf-Hb)/(2*dr)
+    ### get derivative coupling matrix
+    dc = Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl)
+    Hel = H_e(Hel, r_curr)
+    Hl = Hel + Hp + Hep
+    gik = Hopping_Rate(dc, Dl, v_curr, dt, 2, 1)
+    if (gik>0.5):
+        act_idx = 1
+    ### update Density matrix in local basis
+    Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
+    
+    ### get force on active surface
+    F_curr = TrHD(Hprime, D_act)
+    
+    ### get acceleration
+    a_curr = -1 * F_curr / mass
+    
+    ### update position
+    r_fut = r_curr + v_curr * dt + 1/2 * a_curr * dt ** 2
+    ### get H in local basis at r_fut
+    #Hel = H_e(Hel, r_fut)
+    #Hl = Hel + Hp + Hep
+    ### Get H and D in polariton basis at r_fut and t_fut
+    [Hpl, Dpl, v] = Transform_L_to_P(r_fut, Dl, Hp, Hep)
+    ### get derivative of Hpl at r_fut
+    [Hf, Df, v] = Transform_L_to_P(r_fut+dr, Dl, Hp, Hep)
+    [Hb, Df, v] = Transform_L_to_P(r_fut-dr, Dl, Hp, Hep)
+    Hprime = (Hf-Hb)/(2*dr)
+    ### get force from Hellman-Feynman theorem
+    F_fut = TrHD(Hprime, D_act)
+    ### get energy at r_fut
+    E_fut = TrHD(Hpl, D_act)
+    ### get acceleration
+    a_fut = -1 * F_fut / mass
+    ### get updated velocity
+    v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+    
+    ### figure out if we should hoop
+    
+    return [r_fut, v_fut, E_fut, Dl, act_idx]
+
+### evaluate the hopping rate from state j -> k
+def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
+    arg = 2 * v * np.real(dc[idx_j, idx_k] * Dl[idx_k, idx_j]) * dt
+    if (arg<0):
+        rate = 0
+    else:
+        rate = arg / np.real(Dl[idx_j, idx_j])
+    return rate
+    
+    
+    
+   
+def Derivative_Coupling(r_curr, H_prime, Hp, Hep, Dl):
+    dim = len(H_prime)
+    ### create empty array of derivative coupling elements
+    dc = np.zeros((dim, dim))
+    ### get polariton hamiltonian in current geometry
+    [Hpl, Dpl, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
+    
+    for i in range(0, dim):
+        psi_i = CreateBas(dim, i)
+        D_ii = Form_Rho(psi_i, psi_i)
+        Vii = TrHD(Hpl, D_ii)
+        for j in range(i,dim):
+            if (i!=j):
+                psi_j = CreateBas(dim, j)
+                D_jj = Form_Rho(psi_j, psi_j)
+                Vjj = TrHD(Hpl, D_jj)
+                D_ij = Form_Rho(psi_i, psi_j)
+                cup = TrHD(H_prime, D_ij)
+                dc[i,j] = cup/(Vjj-Vii)
+                dc[j,i] = cup/(Vii-Vjj)
+    return dc
+        
+            
+            
+    
+    
+        
 '''
 def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
 
