@@ -332,6 +332,11 @@ def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt
 
 def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
     dim = len(Dl)
+    pop_curr = np.zeros(dim)
+    pop_fut = np.zeros(dim)
+    pop_dot = np.zeros(dim)
+    gik = np.zeros(dim)
+    
     ### Get density matrix for active state
     Psi_act = CreateBas(dim, act_idx)
     D_act = Form_Rho(Psi_act, Psi_act)
@@ -344,33 +349,31 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
     Hel = H_e(Hel, r_curr)
     Hl = Hel + Hp + Hep
     
-    ### active population at current time
-    act_pop_curr = Dl[act_idx, act_idx]
+    ### compute populations in all states from active down to ground
     
-    ### active-1 population at current time
-    act_m_1_pop_curr = Dl[act_idx-1, act_idx-1]
+    ### loop from 0 to avail_states
+    for i in range(0,act_idx+1):
+        pop_curr[i] = Dl[i, i]
+
     ### update density matrix
     Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
-    ### active-1 population at future time
-    act_m_1_pop_fut = Dl[act_idx-1, act_idx-1]
-    ### velocity of active population
-    pop_dot = (act_m_1_pop_fut - act_m_1_pop_curr)/dt
-    
-    ### rate expression
-    gik = np.real( pop_dot / act_pop_curr * dt )
-    
-    if (gik<0):
-        gik = 0
-    #print(gik)
-    
-    thresh = np.random.random()
-    #gik = Hopping_Rate(dc, Dl, v_curr, dt, 2, 1)
-    #print("hopping rate:", gik)
-    if (gik>thresh):
-        print("Hopped!")
-        act_idx = 1
-    ### update Density matrix in local basis
-
+    ### populations at future time and hopping rates
+    for i in range(0,act_idx):
+        pop_fut[i] = Dl[i,i]
+        pop_dot[i] = (pop_fut[i] - pop_curr[i])/dt
+        g = np.real( pop_dot[i] / pop_curr[act_idx] * dt)
+        if (g<0):
+            g = 0
+            
+        gik[i] = g 
+        
+    ### decide if we want to hop
+    thresh = np.random.random(act_idx)
+    for i in range(0,act_idx):
+        if (gik[i]>thresh[i]):
+            print("hopping from state ",act_idx,"to ",i)
+            act_idx = i
+            
     
     ### get force on active surface
     F_curr = TrHD(Hprime, D_act)
