@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.00000 #1 #5
+gam_diss_np = 0.00001 #1 #5
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000

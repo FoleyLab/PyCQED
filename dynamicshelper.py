@@ -344,6 +344,7 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
     Hel = H_e(Hel, r_curr)
     Hl = Hel + Hp + Hep
     gik = Hopping_Rate(dc, Dl, v_curr, dt, 2, 1)
+    #print("hopping rate:", gik)
     if (gik>0.5):
         act_idx = 1
     ### update Density matrix in local basis
@@ -381,11 +382,14 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
 
 ### evaluate the hopping rate from state j -> k
 def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
+    
     arg = 2 * v * np.real(dc[idx_j, idx_k] * Dl[idx_k, idx_j]) * dt
     if (arg<0):
         rate = 0
     else:
         rate = arg / np.real(Dl[idx_j, idx_j])
+    
+    print(dc[idx_j, idx_k], np.real(Dl[idx_k, idx_j]), np.real(Dl[idx_j, idx_j]), v[0], rate)
     return rate
     
     
