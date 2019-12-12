@@ -343,12 +343,34 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
     dc = Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl)
     Hel = H_e(Hel, r_curr)
     Hl = Hel + Hp + Hep
-    gik = Hopping_Rate(dc, Dl, v_curr, dt, 2, 1)
+    
+    ### active population at current time
+    act_pop_curr = Dl[act_idx, act_idx]
+    
+    ### active-1 population at current time
+    act_m_1_pop_curr = Dl[act_idx-1, act_idx-1]
+    ### update density matrix
+    Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
+    ### active-1 population at future time
+    act_m_1_pop_fut = Dl[act_idx-1, act_idx-1]
+    ### velocity of active population
+    pop_dot = (act_m_1_pop_fut - act_m_1_pop_curr)/dt
+    
+    ### rate expression
+    gik = np.real( pop_dot / act_pop_curr * dt )
+    
+    if (gik<0):
+        gik = 0
+    #print(gik)
+    
+    thresh = np.random.random()
+    #gik = Hopping_Rate(dc, Dl, v_curr, dt, 2, 1)
     #print("hopping rate:", gik)
-    if (gik>0.5):
+    if (gik>thresh):
+        print("Hopped!")
         act_idx = 1
     ### update Density matrix in local basis
-    Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
+
     
     ### get force on active surface
     F_curr = TrHD(Hprime, D_act)
