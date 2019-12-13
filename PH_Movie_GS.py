@@ -130,11 +130,13 @@ Dl[pn,pn] = 1.+0j
 
 
 flag = 1
+T = 0.01 # boiling point of CO in atomic units
+g_n = 0.0001
 for i in range(0,N_time):
     #### Update nuclear coordinate first
     time[i] = i*dt
     #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
-    res = dh.FSSH_Update(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
+    res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
     ri = res[0]
     vi = res[1]
     #if flag==1:

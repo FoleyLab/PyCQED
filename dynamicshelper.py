@@ -330,7 +330,7 @@ def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt
 
 
 
-def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
+def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
     dim = len(Dl)
     pop_curr = np.zeros(dim)
     pop_fut = np.zeros(dim)
@@ -374,15 +374,20 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
             print("hopping from state ",act_idx,"to ",i)
             act_idx = i
             
-    
+        ### use parameters set above to get initial perturbation of force for Langevin dynamics
+    rp_curr = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
+
     ### get force on active surface
     F_curr = TrHD(Hprime, D_act)
-    
+
     ### get acceleration
-    a_curr = -1 * F_curr / mass
+    ### Langevin acceleration
+    a_curr = (-1 * F_curr + rp_curr) / mass - g_nuc * v_curr
+    ### bbk update to velocity and position
+    v_halftime = v_curr + a_curr*dt/2
+
+    r_fut = r_curr + v_halftime * dt
     
-    ### update position
-    r_fut = r_curr + v_curr * dt + 1/2 * a_curr * dt ** 2
     ### get H in local basis at r_fut
     #Hel = H_e(Hel, r_fut)
     #Hl = Hel + Hp + Hep
@@ -396,10 +401,15 @@ def FSSH_Update(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt,
     F_fut = TrHD(Hprime, D_act)
     ### get energy at r_fut
     E_fut = TrHD(Hpl, D_act)
+
+    rp_fut = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
     ### get acceleration
-    a_fut = -1 * F_fut / mass
+    a_fut = (-1 * F_fut + rp_fut) / mass - g_nuc * v_halftime
     ### get updated velocity
-    v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+    ### vv update
+    ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+    ### bbk update
+    v_fut = (v_halftime + a_fut * dt/2) * (1/(1 + g_nuc * dt/2))
     
     ### figure out if we should hoop
     
