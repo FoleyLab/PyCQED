@@ -10,20 +10,14 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.00001 #1 #5
+gam_diss_np = 0.01
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
 gam_deph = 0.0000
 
-### Initial position, velocity, timestep, and R-step for dynamics
-#ri = np.array([-0.7, -0.6])
-#vi = np.array([0.0001282*1.5, 0.0001282*1.2])
 
-ri_val = 0.1 #-0.6615679318398704 
-vi_val = 3.33752906715916e-05
-ri = np.array([ri_val])
-vi = np.array([vi_val])
+
 au_to_ps = 2.4188e-17 * 1e12
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
@@ -35,7 +29,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 400000 #00
+N_time = 40000 #00
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
@@ -43,7 +37,7 @@ dr = 0.01
 dt = 0.25
 
 ### initial polariton state
-pn = 2z
+pn = 2
 
 ### array of dissipation parameters to be passed to RK4 function
 gamma = np.zeros(4)
@@ -57,14 +51,14 @@ gamma[3] = gam_diss_m+gam_diss_np
 ### various arrays for dynamics
 
 time = np.zeros(N_time)
-r_of_t = np.zeros((N_time,1))
-hf_error_of_t = np.zeros((N_time, 1))
-tot_error_of_t = np.zeros((N_time, 1))
+r_of_t = np.zeros((N_time,3))
+hf_error_of_t = np.zeros((N_time, 3))
+tot_error_of_t = np.zeros((N_time, 3))
 
 oo = np.zeros((N_time, 1))
 tt = np.zeros((N_time, 1))
-v_of_t = np.zeros((N_time,1))
-e_of_t = np.zeros((N_time,1))
+v_of_t = np.zeros((N_time,3))
+e_of_t = np.zeros((N_time,3))
 p_of_t = np.zeros((N_time,4))
 
 ''' The following parameters and arrays pertain 
@@ -118,9 +112,6 @@ plt.ylim(0,10)
 plt.show()
 '''
 
-### density matrix in polariton basis!
-Dl = np.zeros((4,4),dtype=complex)
-Dl[pn,pn] = 1.+0j
 
 
 #[Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
@@ -132,70 +123,65 @@ Dl[pn,pn] = 1.+0j
 flag = 1
 T = 0.01 # boiling point of CO in atomic units
 g_n = 0.0001
-for i in range(0,N_time):
-    #### Update nuclear coordinate first
-    time[i] = i*dt
-    #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
-    res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
-    ri = res[0]
-    vi = res[1]
-    #if flag==1:
-    #res = dh.VelocityVerlet(Fi_spline, M, ri, vi, dt)
-    #hf_force = dh.HF_Force(Hp, Hep, He, ri[0], dr, Dpl)
-    #res_force = dh.Dp_Force(Hp, Hep, He, ri[0], dr, D)
-    #hf_error_of_t[i,:] = (hf_force-Fi_spline(ri[0]))/Fi_spline(ri[0])
-    #tot_error_of_t[i,:] = (res_force+hf_force)-Fi_spline(ri[0])
-    #print(" Difference between HF and spline force is ",hf_force-Fi_spline(ri[0]))
-    #else:
-    #res = dh.VelocityVerlet(Fg_spline, M, ri, vi, dt)
+ri_val = [-0.6615679318398704, -0.698020918719673, -0.7325842045116059]
+vi_val = [3.33752906715916e-05, -1.7604569932905628e-05, 7.215162825258178e-07]
+iso_res = np.zeros(len(vi_val))
 
-    r_of_t[i,:] = ri
-    v_of_t[i,:] = vi
-    #D = res[2]
-    #Htot = dh.H_e(He, ri) + Hp + Hep
-    #if flag==1:
-    e_of_t[i,:] = res[2] #i_spline(ri)
-    Dl = res[3]
-    pn = res[4]
-    p_of_t[i,0] = np.real(Dl[0,0])
-    p_of_t[i,1] = np.real(Dl[1,1])
-    p_of_t[i,2] = np.real(Dl[2,2])
-    p_of_t[i,3] = np.real(Dl[3,3])
-    
-    #if (i==1240284):
-    #    Dl = np.zeros((4,4),dtype=complex)
-    #    Dl[0,0] = 1+0j
-    
-    #= np.zeros((N_time,4))
-    #else:
-    #e_of_t[i,:] = g_spline(ri)
-    #dh.TrHD(Htot, D)
-    #for j in range(0,4):
-    #    p_of_t[i,j] = np.real(D[j,j])
 
+for j in range(0,3):
+    pn = 2
+    ### density matrix in polariton basis!
+    Dl = np.zeros((4,4),dtype=complex)
+    Dl[pn,pn] = 1.+0j
+    ri = ri_val[j]
+    vi = vi_val[j]
+    gs_r = []
+    
+    for i in range(0,N_time):
+        #### Update nuclear coordinate first
+        time[i] = i*dt
+        #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
+        res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
+        ri = res[0]
+        vi = res[1]
+        r_of_t[i,j] = ri
+        v_of_t[i,j] = vi
+        e_of_t[i,j] = res[2] #i_spline(ri)
+        Dl = res[3]
+        pn = res[4]
+        p_of_t[i,0] = np.real(Dl[0,0])
+        p_of_t[i,1] = np.real(Dl[1,1])
+        p_of_t[i,2] = np.real(Dl[2,2])
+        p_of_t[i,3] = np.real(Dl[3,3])
+        
+        if (pn==0):
+            gs_r.append(ri)
+    ### if we have accumulated a trajectory on the gs surface        
+    if (len(gs_r)>1):
+        avg_r = sum(gs_r) / len(gs_r)
+        if (avg_r>0.1):
+            iso_res[j] = 1
+        else:
+            iso_res[j] = 0
+    ### if we haven't decayed to the gs, the simulation is indeterminant
+    else:
+        iso_res[j] = 0.5
+
+print(iso_res)
+'''
 plt.plot(time*au_to_ps, p_of_t[:,0], 'r')
 plt.plot(time*au_to_ps, p_of_t[:,1], 'y')
 plt.plot(time*au_to_ps, p_of_t[:,2], 'g')
 plt.plot(time*au_to_ps, p_of_t[:,3], 'b')
 plt.show()
-#plt.plot(r_of_t[:,0], hf_error_of_t[:,0], 'purple', label='Hellman-Feynman')
-#plt.plot(r_of_t[:,0], tot_error_of_t[:,0], 'g--', label='Total')
-#plt.plot(rlist, 27.211*PPES[:,0], 'b')
-#plt.plot(rlist, 27.211*PPES[:,1], 'r')
-#plt.plot(rlist, 27.211*PPES[:,2], 'y')
-#plt.plot(rlist, 27.211*PPES[:,3], 'r')
-#plt.plot(r_of_t, 27.211*e_of_t, 'red', label='Trajectory')
-#plt.legend()
-#plt.show()
 
 
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
-#ax.set_aspect('equal')
 ax.grid()
 
-line, = ax.plot([], [], 'o-', lw=2)
-line1, = ax.plot([], [], 'o-', lw=2)
+line, = ax.plot([], [], 'o', lw=2)
+line1, = ax.plot([], [], 'o', lw=2)
 linee1, = ax.plot([], [], lw=2)
 linep2, = ax.plot([], [], lw=2)
 linep1, = ax.plot([], [], lw=2)
@@ -212,15 +198,9 @@ def init():
 
 
 def animate(i):
-    thisx = r_of_t[i,:]#[r_of_t[i,0], r_of_t[i,1]]
-    thisy = 27.211*e_of_t[i,:] #[27.211*e_of_t[i,0],27.211*e_of_t[i,1]]
-    #thisx = [r_of_t[i]]
-    #thisy = [27.211*e_of_t[i]]
-    
-    
+    thisx = r_of_t[i,:]
+    thisy = 27.211*e_of_t[i,:]     
     line.set_data(thisx, thisy)
-    #thisx = [r_of_t[i]+0.1]
-    #line1.set_data(thisx, thisy)
     linee1.set_data(rlist, 27.211*PPES[:,3])
     linep2.set_data(rlist, 27.211*PPES[:,2])
     linep1.set_data(rlist, 27.211*PPES[:,1])
@@ -232,13 +212,13 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
                               interval=dt, blit=True, init_func=init)
 plt.show()
 
-#ani.save('test.mp4')
+
 
 
 
 #import numpy as np
 #from matplotlib import pyplot as plt
-
+'''
 ''' get reasonable starting positions and velocities!
 k = 0.31246871517560126
 M = 1009883
@@ -275,6 +255,7 @@ for _ in range(10):
     value_p = gauss(0, v_unc)
     print(value_x, value_p)
     
-    '''
+
 plt.show()
 print(sig)
+'''
