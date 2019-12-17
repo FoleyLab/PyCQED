@@ -10,7 +10,7 @@ import matplotlib.animation as animation
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.01
+gam_diss_np = 0.00001
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -29,12 +29,12 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 40000 #00
+N_time = 1700000 #00
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.01 
 ### time displacement increment for dynamics (a.u.)
-dt = 0.25
+dt = 0.1
 
 ### initial polariton state
 pn = 2
@@ -121,14 +121,16 @@ plt.show()
 
 
 flag = 1
-T = 0.01 # boiling point of CO in atomic units
-g_n = 0.0001
-ri_val = [-0.6615679318398704, -0.698020918719673, -0.7325842045116059]
-vi_val = [3.33752906715916e-05, -1.7604569932905628e-05, 7.215162825258178e-07]
+T = 0.00095 # boiling point of CO in atomic units
+g_n = 0.000011
+ri_val = [-0.6939445601745601]
+vi_val = [-3.3319508968582436e-06]
 iso_res = np.zeros(len(vi_val))
 
-
-for j in range(0,3):
+### The loop that computes r_of_t and e_of_t for all the 
+### particles in the system (currently just 1)
+### j-loop is loop over particle number
+for j in range(0,1):
     pn = 2
     ### density matrix in polariton basis!
     Dl = np.zeros((4,4),dtype=complex)
@@ -137,6 +139,7 @@ for j in range(0,3):
     vi = vi_val[j]
     gs_r = []
     
+    ### i-loop is the loop over time
     for i in range(0,N_time):
         #### Update nuclear coordinate first
         time[i] = i*dt
@@ -144,8 +147,10 @@ for j in range(0,3):
         res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
         ri = res[0]
         vi = res[1]
+        ### update particle position
         r_of_t[i,j] = ri
         v_of_t[i,j] = vi
+        ### update particle energy
         e_of_t[i,j] = res[2] #i_spline(ri)
         Dl = res[3]
         pn = res[4]
@@ -167,8 +172,10 @@ for j in range(0,3):
     else:
         iso_res[j] = 0.5
 
+
+#### Now we have the position and energy of the particle for all timepoints in the simulation!
 print(iso_res)
-'''
+
 plt.plot(time*au_to_ps, p_of_t[:,0], 'r')
 plt.plot(time*au_to_ps, p_of_t[:,1], 'y')
 plt.plot(time*au_to_ps, p_of_t[:,2], 'g')
@@ -176,12 +183,13 @@ plt.plot(time*au_to_ps, p_of_t[:,3], 'b')
 plt.show()
 
 
+### set up a figure object that will hold our animation
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
 ax.grid()
 
+### these are the different curves/points that will be plotted
 line, = ax.plot([], [], 'o', lw=2)
-line1, = ax.plot([], [], 'o', lw=2)
 linee1, = ax.plot([], [], lw=2)
 linep2, = ax.plot([], [], lw=2)
 linep1, = ax.plot([], [], lw=2)
@@ -190,13 +198,15 @@ lineg0, = ax.plot([], [], lw=2)
 time_template = 'time = %.1e ps'
 time_text = ax.text(0.05, 0.02, '', transform=ax.transAxes)
 
-
+### initializes the figure object
 def init():
     line.set_data([], [])
     time_text.set_text('')
     return line, time_text
 
 
+### function that defines the points/curves in the animation given a current
+### value of the time counter, i
 def animate(i):
     thisx = r_of_t[i,:]
     thisy = 27.211*e_of_t[i,:]     
@@ -208,6 +218,11 @@ def animate(i):
     time_text.set_text(time_template % (i*dt * au_to_ps))
     return line, linee1, linep2, linep1, lineg0, time_text
 
+### driver for the animation... argument fig refers to the figure object,
+### argument animate refers to the animate function above, the range argument 
+### defines which values of the time counter will be used 
+### (here the timestep dt is really small, so we only plot every 100 timesteps
+### to make the animation reasonable
 ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
                               interval=dt, blit=True, init_func=init)
 plt.show()
@@ -218,7 +233,7 @@ plt.show()
 
 #import numpy as np
 #from matplotlib import pyplot as plt
-'''
+
 ''' get reasonable starting positions and velocities!
 k = 0.31246871517560126
 M = 1009883
