@@ -353,13 +353,13 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     
     ### loop from 0 to avail_states
     for i in range(0,act_idx+1):
-        pop_curr[i] = Dl[i, i]
+        pop_curr[i] = np.real(Dl[i, i])
 
     ### update density matrix
     Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
     ### populations at future time and hopping rates
     for i in range(0,act_idx):
-        pop_fut[i] = Dl[i,i]
+        pop_fut[i] = np.real(Dl[i,i])
         pop_dot[i] = (pop_fut[i] - pop_curr[i])/dt
         g = np.real( pop_dot[i] / pop_curr[act_idx] * dt)
         if (g<0):
