@@ -92,6 +92,7 @@ def Dp_Force(Hp, Hep, He, r, dr, D):
 ''' Quantum dynamics first '''
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
+
 def Form_Rho(Psii, Psij):
 
     D = np.outer(Psii,np.conj(Psij))
@@ -155,7 +156,6 @@ def RK4(H, D, h, gamma, gam_deph):
     return Df
 
 
-
 def RK4_NA(H, D, h, gamma, gam_deph, V, dc):
     ci = 1+0j
     k1 = np.zeros_like(D)
@@ -209,6 +209,7 @@ def L_Deph(D, gam):
 
 ### Creates basis vector for state k
 ### k=0 -> ground state, k=1 -> first excited-state, etc
+
 def CreateBas(dim, k):
     bas = np.zeros(dim)
     bas[k] = 1
@@ -237,9 +238,12 @@ def L_Diss(D, gamma):
         
     return LD
 
+
 def DDot(H, D):
     ci = 0.+1j
     return -ci*(np.dot(H,D) - np.dot(D, H))
+
+
 
 def TrHD(H, D):
     N = len(H)
@@ -252,6 +256,7 @@ def TrHD(H, D):
 ### Transform density matrix from local to polariton basis
 ### at a given R... return (diagonal) polariton Hamiltonian
 ### and transformation vecs, also
+
 def Transform_L_to_P(r, Dl, Hp, Hep):
     He = np.zeros((4,4))
     He = H_e(He, r)
@@ -275,6 +280,7 @@ def Transform_L_to_P(r, Dl, Hp, Hep):
 ### Transform density matrix from polariton to local basis
 ### at a given R... return (off-diagonal) local Hamiltonian
 ### and transformation vecs, also
+
 def Transform_P_to_L(r, Dp, Hp, Hep):
     He = np.zeros((4,4))
     He = H_e(He, r)
@@ -416,6 +422,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     return [r_fut, v_fut, E_fut, Dl, act_idx]
 
 ### evaluate the hopping rate from state j -> k
+
 def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
     
     arg = 2 * v * np.real(dc[idx_j, idx_k] * Dl[idx_k, idx_j]) * dt
@@ -428,8 +435,7 @@ def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
     return rate
     
     
-    
-   
+
 def Derivative_Coupling(r_curr, H_prime, Hp, Hep, Dl):
     dim = len(H_prime)
     ### create empty array of derivative coupling elements
