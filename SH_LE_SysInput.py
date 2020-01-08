@@ -13,36 +13,53 @@ import sys
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
 
-ri_init = float(sys.argv[1])
-vi_init = float(sys.argv[2])
 
-gam_diss_np = float(sys.argv[3])
+### initial position
+ri_init = float(sys.argv[1])
+### initial velocity
+vi_init = float(sys.argv[2])
+### photonic mode dissipation rate in meV, gamma
+gamp = float(sys.argv[3]) 
+### convert to a.u.
+gam_diss_np = gamp * 1e-3 / 27.211
+
+### photonic mode energy in eV
+omp = float(sys.argv[4])
+### convert to a.u.
+omc = omp/27.211
+### coupling strength in eV
+gp = float(sys.argv[5])
+### convert to a.u.
+gc = gp/27.211
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
 gam_deph = 0.0000
 
+### Set T to 300 K in atomic units
+T = 0.00095 # 300 K is 0.00095 in atomic units
+### Set friction constant so that vibrational relaxation happens on a ~3 ps timescale
+### Note this value of g_n = 0.000011 was arrived at with some experimentation; 
+### we can probably determine the correct value analytically.
+g_n = 0.000011
 
 
 au_to_ps = 2.4188e-17 * 1e12
 ### This is the reduced mass of this rotational mode for the dynamics... in atomic units
 M = 1009883
 
-### hbar omega_c in atomic units
-omc = 2.45/27.211 
-### hbar g_c in atomic units
-gc = 0.02/27.211
-
-
 ### Number of updates for dynamics
-N_time = 4000000
-
+N_time = 4000000 
+### N_thresh controls when you start taking the average position
+N_thresh = N_time / 4
 ### position displacement increment for dynamics (a.u.)
-dr = 0.01 
+dr = 0.001
 ### time displacement increment for dynamics (a.u.)
-dt = 0.1
+### This is about 0.003 f.s., similar to timestep used in Ehrenfest dynamics for 
+### ACS Nano 2016, 10, 5452-5458
+dt = 0.12 
 
-### initial polariton state
+### initial state for light/matter system (will index the density matrix in local basis)
 pn = 2
 
 ### array of dissipation parameters to be passed to RK4 function
@@ -57,12 +74,10 @@ gamma[3] = gam_diss_m+gam_diss_np
 ### various arrays for dynamics
 
 time = np.zeros(N_time)
-r_of_t = np.zeros((N_time,10))
-hf_error_of_t = np.zeros((N_time, 10))
-tot_error_of_t = np.zeros((N_time, 10))
+r_of_t = np.zeros(N_time)
 
-v_of_t = np.zeros((N_time,10))
-e_of_t = np.zeros((N_time,10))
+v_of_t = np.zeros(N_time)
+e_of_t = np.zeros(N_time)
 p_of_t = np.zeros((N_time,4))
 
 ''' The following parameters and arrays pertain 
@@ -97,32 +112,10 @@ for i in range(0,len(rlist)):
     vals = vals[idx]
     for j in range(0,4):
         PPES[i,j] = vals[j]
-        
-### form spline for ground-state surface
-i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,1], k=3)
-Fi_spline = i_spline.derivative()
-  
-g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
-Fg_spline = g_spline.derivative()  
 
-
-#[Ht, Dl, vec] = dh.Transform_P_to_L(ri[0], Dpl, Hp, Hep)
-#print(Dl)
-#HD = np.dot(Ht,Dl)
-#print(Ht)
-
-
-flag = 1
-T = 0.00095 # boiling point of CO in atomic units
-g_n = 0.000011
-#ri_val = [-0.6615679318398704, -0.698020918719673, -0.7325842045116059, -0.7304937149739744, -0.6940536701380835, -0.6836965102136909, -0.6998506709530399, -0.7449253281970559, -0.6904318143316741, -0.6939445601745601]
-#vi_val = [3.33752906715916e-05, -1.7604569932905628e-05, 7.215162825258178e-07, -3.308478778918541e-05, 3.0711164130420224e-06, -2.104531948592309e-05, -1.4907596794662185e-06, 1.2388055205752432e-05, 5.501228084142224e-05, -3.3319508968582436e-06]
-
-
-pn = 2
 ri = ri_init
 vi = vi_init
-### density matrix in polariton basis!
+### density matrix in local
 Dl = np.zeros((4,4),dtype=complex)
 Dl[pn,pn] = 1.+0j
 gs_r = []
@@ -134,9 +127,9 @@ for i in range(0,N_time):
     res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
     ri = res[0]
     vi = res[1]
-    r_of_t[i,j] = ri
-    v_of_t[i,j] = vi
-    e_of_t[i,j] = res[2] #i_spline(ri)
+    r_of_t[i] = ri
+    v_of_t[i] = vi
+    e_of_t[i] = res[2] #i_spline(ri)
     Dl = res[3]
     pn = res[4]
     p_of_t[i,0] = np.real(Dl[0,0])
@@ -144,21 +137,18 @@ for i in range(0,N_time):
     p_of_t[i,2] = np.real(Dl[2,2])
     p_of_t[i,3] = np.real(Dl[3,3])
         
-    if (pn==0):
+    #### Don't start taking average immediately, allow some time to elapse first.
+    if (i>N_thresh):
         gs_r.append(ri)
-
 
 ### if we have accumulated a trajectory on the gs surface        
 if (len(gs_r)>1):
     avg_r = sum(gs_r) / len(gs_r)
-    print("avg r is ",avg_r)
+    #print("avg r is ",avg_r)
     if (avg_r>0.0):
         iso_res = 1
     else:
         iso_res = 0
-### if we haven't decayed to the gs, the simulation is indeterminant
-else:
-    iso_res = 0.5
 
-print(ri_init, vi_init, gam_diss_np, iso_res)
+print(ri_init, vi_init, gamp, omp, gp, avg_r, iso_res)
 
