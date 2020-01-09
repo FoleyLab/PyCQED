@@ -346,11 +346,14 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     ### Get density matrix for active state
     Psi_act = CreateBas(dim, act_idx)
     D_act = Form_Rho(Psi_act, Psi_act)
+    ### Get current density matrix in polariton basis
+    [Hf, Dp_curr, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
     ### Get nuclear force on the active state
     [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
     [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
     Hprime = (Hf-Hb)/(2*dr)
-    ### get derivative coupling matrix
+    
+    ### Get derivative coupling
     dc = Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl)
     Hel = H_e(Hel, r_curr)
     Hl = Hel + Hp + Hep
@@ -363,22 +366,35 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
 
     ### update density matrix
     Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
-    ### populations at future time and hopping rates
+    ###$ Get future density matrix in polariton basis
+    [Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
+    
+    ### get change in populations in polariton basis and
+    ### hopping probabilities in polariton basis
+    #print(np.real(Dp_fut[0,0]-Dp_curr[0,0]), np.real(Dp_fut[1,1]-Dp_curr[1,1]), np.real(Dp_fut[2,2]-Dp_curr[2,2]))
     for i in range(0,act_idx):
-        pop_fut[i] = np.real(Dl[i,i])
-        pop_dot[i] = (pop_fut[i] - pop_curr[i])/dt
-        g = np.real( pop_dot[i] / pop_curr[act_idx] * dt)
+        pop_dot[i] = np.real(Dp_fut[i,i] - Dp_curr[i,i])/dt
+        g = np.real( pop_dot[i] / Dp_curr[act_idx,act_idx] * dt)
         if (g<0):
             g = 0
             
-        gik[i] = g 
+        ### Get cumulative probability
+        if (i==0):
+            gik[i] = g
+        else:
+            gik[i] = g + gik[i-1]
         
-    ### decide if we want to hop
-    thresh = np.random.random(act_idx)
-    for i in range(0,act_idx):
-        if (gik[i]>thresh[i]):
-            print("hopping from state ",act_idx,"to ",i)
-            act_idx = i
+    ### decide if we want to hop to state k, if any
+    thresh = np.random.random(1)
+    #print(gik[0],gik[1],gik[2],gik[3],thresh[0])
+    if gik[0]>thresh[0]:
+        print("hopping from state ",act_idx,"to ",0)
+        act_idx = 0
+    else:
+        for i in range(1,act_idx):
+            if (gik[i]>thresh[0]):
+                print("hopping from state",act_idx,"to ",i-1)
+                act_idx = i-1
             
         ### use parameters set above to get initial perturbation of force for Langevin dynamics
     rp_curr = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
@@ -416,8 +432,6 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
     ### bbk update
     v_fut = (v_halftime + a_fut * dt/2) * (1/(1 + g_nuc * dt/2))
-    
-    ### figure out if we should hoop
     
     return [r_fut, v_fut, E_fut, Dl, act_idx]
 

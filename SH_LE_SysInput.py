@@ -49,7 +49,7 @@ au_to_ps = 2.4188e-17 * 1e12
 M = 1009883
 
 ### Number of updates for dynamics
-N_time = 4000000 
+N_time = 4000000
 ### N_thresh controls when you start taking the average position
 N_thresh = N_time / 4
 ### position displacement increment for dynamics (a.u.)
@@ -57,8 +57,7 @@ dr = 0.001
 ### time displacement increment for dynamics (a.u.)
 ### This is about 0.003 f.s., similar to timestep used in Ehrenfest dynamics for 
 ### ACS Nano 2016, 10, 5452-5458
-dt = 0.12 
-
+dt = 0.12
 ### initial state for light/matter system (will index the density matrix in local basis)
 pn = 2
 
