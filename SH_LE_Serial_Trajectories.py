@@ -30,7 +30,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 80000
+N_time = 150000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.001 
@@ -124,8 +124,8 @@ Fg_spline = g_spline.derivative()
 
 flag = 1
 T = 0.00095 # boiling point of CO in atomic units
-#g_n = 0.000011
-g_n = 0
+g_n = 0.000011
+#g_n = 0
 ri_val = [-0.6940536701380835]
 vi_val = [ 3.0711164130420224e-06]
 iso_res = np.zeros(len(vi_val))
