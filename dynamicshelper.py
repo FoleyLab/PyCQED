@@ -372,7 +372,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     ### get change in populations in polariton basis and
     ### hopping probabilities in polariton basis
     #print(np.real(Dp_fut[0,0]-Dp_curr[0,0]), np.real(Dp_fut[1,1]-Dp_curr[1,1]), np.real(Dp_fut[2,2]-Dp_curr[2,2]))
-    for i in range(0,act_idx):
+    for i in range(0,act_idx+1):
         pop_dot[i] = np.real(Dl_fut[i,i] - Dl[i,i])/dt
         g = np.real( pop_dot[i] / Dl[act_idx,act_idx] * dt)
         if (g<0):
