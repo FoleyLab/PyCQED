@@ -30,12 +30,12 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 200000
+N_time = 80000
 
 ### position displacement increment for dynamics (a.u.)
-dr = 0.02 
+dr = 0.001 
 ### time displacement increment for dynamics (a.u.)
-dt = 0.02
+dt = 0.2
 
 ### initial polariton state
 pn = 2
@@ -104,15 +104,15 @@ g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
 Fg_spline = g_spline.derivative()  
 
 ### Plot the surfaces
-'''
-plt.plot(rlist, 27.211*PPES[:,0], 'b')
-plt.plot(rlist, 27.211*PPES[:,1], 'g')
-plt.plot(rlist, 27.211*PPES[:,2], 'y')
-plt.plot(rlist, 27.211*PPES[:,3], 'r')
-plt.xlim(-1.5,1.5)
-plt.ylim(0,10)
-plt.show()
-'''
+
+#plt.plot(rlist, 27.211*PPES[:,0], 'b')
+#plt.plot(rlist, 27.211*PPES[:,1], 'g')
+#plt.plot(rlist, 27.211*PPES[:,2], 'y')
+#plt.plot(rlist, 27.211*PPES[:,3], 'r')
+#plt.xlim(-1.5,1.5)
+#plt.ylim(0,10)
+#plt.show()
+
 
 
 
@@ -182,15 +182,15 @@ print(end - start)
 #### Now we have the position and energy of the particle for all timepoints in the simulation!
 print(iso_res)
 
-#plt.plot(sim_time*au_to_ps, p_of_t[:,0], 'r--')
+plt.plot(sim_time*au_to_ps, p_of_t[:,0], 'r--')
 plt.plot(sim_time*au_to_ps, p_of_t[:,1], 'b--')
 plt.plot(sim_time*au_to_ps, p_of_t[:,2], 'r--')
-#plt.plot(sim_time*au_to_ps, p_of_t[:,3], 'b--')
+plt.plot(sim_time*au_to_ps, p_of_t[:,3], 'b--')
 plt.show()
 
 
 ### set up a figure object that will hold our animation
-'''
+
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
 ax.grid()
@@ -224,15 +224,15 @@ def animate(i):
     lineg0.set_data(rlist, 27.211*PPES[:,0])
     time_text.set_text(time_template % (i*dt * au_to_ps))
     return line, linee1, linep2, linep1, lineg0, time_text
-'''
+
 ### driver for the animation... argument fig refers to the figure object,
 ### argument animate refers to the animate function above, the range argument 
 ### defines which values of the time counter will be used 
 ### (here the timestep dt is really small, so we only plot every 100 timesteps
 ### to make the animation reasonable
-#ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
-#                             interval=dt, blit=True, init_func=init)
-#plt.show()
+ani = animation.FuncAnimation(fig, animate, range(1, len(r_of_t),100),
+                             interval=dt, blit=True, init_func=init)
+plt.show()
 
 
 

@@ -365,16 +365,16 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
         pop_curr[i] = np.real(Dl[i, i])
 
     ### update density matrix
-    Dl = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
+    Dl_fut = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
     ###$ Get future density matrix in polariton basis
-    [Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
+    [Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl_fut, Hp, Hep)
     
     ### get change in populations in polariton basis and
     ### hopping probabilities in polariton basis
     #print(np.real(Dp_fut[0,0]-Dp_curr[0,0]), np.real(Dp_fut[1,1]-Dp_curr[1,1]), np.real(Dp_fut[2,2]-Dp_curr[2,2]))
     for i in range(0,act_idx):
-        pop_dot[i] = np.real(Dp_fut[i,i] - Dp_curr[i,i])/dt
-        g = np.real( pop_dot[i] / Dp_curr[act_idx,act_idx] * dt)
+        pop_dot[i] = np.real(Dl_fut[i,i] - Dl[i,i])/dt
+        g = np.real( pop_dot[i] / Dl[act_idx,act_idx] * dt)
         if (g<0):
             g = 0
             
@@ -383,6 +383,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
             gik[i] = g
         else:
             gik[i] = g + gik[i-1]
+    print(gik)
         
     ### decide if we want to hop to state k, if any
     thresh = np.random.random(1)
@@ -432,7 +433,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
     ### bbk update
     v_fut = (v_halftime + a_fut * dt/2) * (1/(1 + g_nuc * dt/2))
-    
+    Dl = np.copy(Dl_fut)
     return [r_fut, v_fut, E_fut, Dl, act_idx]
 
 ### evaluate the hopping rate from state j -> k
