@@ -1,0 +1,127 @@
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.699504345608632
+-0.6940536701380835 3.0711164130420224e-06 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8139982662379283
+-0.6824934900946077 2.5716916384414968e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8138641755050371
+-0.6712145721690275 -9.376212854407648e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8142234066984614
+-0.6904318143316741 5.501228084142224e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8130538837589718
+-0.6935488453937674 2.5056824611592777e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8154940476587423
+-0.7304937149739744 -3.308478778918541e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8149915294138217
+-0.7015382635373324 4.6504740639506685e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8124142207102646
+-0.6836965102136909 -2.104531948592309e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8174630919106748
+-0.6977068331532233 1.6589663882738605e-05 5e-06 1
+hopping from state  2 to  1
+avg r is  0.8136559383925975
+-0.7130669087205469 2.893987704450186e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6965138989960912
+-0.6801072031988746 -2.5026872095148172e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8155690650671437
+-0.7397633551827134 -1.0192438146754057e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8141243650522764
+-0.6409097506042635 -2.138263816194422e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6986118707073222
+-0.7449253281970559 1.2388055205752432e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8152007269669778
+-0.6573070224037851 -2.9990732185671934e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.815419474248122
+-0.7083796573332127 -3.570994977598272e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8132735107331915
+-0.6782734424497334 3.6958201786137783e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.814902302826464
+-0.6728797113370457 -8.41711207762262e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.693605520898774
+-0.6805414774275297 1.4261882343640822e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.814868610781443
+-0.6939445601745601 -3.3319508968582436e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6861834683920311
+-0.6615679318398704 3.33752906715916e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8161447886565463
+-0.7325842045116059 7.215162825258178e-07 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.7000384348041799
+-0.6792279694681573 2.958233558830089e-06 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6996611262014236
+-0.7119832457685649 -1.1513780670842717e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.5607977561922051
+-0.6909436630165371 -2.2769190449161004e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6999857518437667
+-0.7322898836286028 1.0251785908131351e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8152344032638528
+-0.6998506709530399 -1.4907596794662185e-06 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6987862724358723
+-0.6934910004320777 2.3585522748101766e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8138217370708419
+-0.698020918719673 -1.7604569932905628e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.8147321289466969
+-0.6785802781002883 -3.0055348527723005e-05 5e-06 1
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  -0.6992903653571876
+-0.7129979771566421 -3.30078483192915e-05 5e-06 0
+hopping from state  2 to  1
+hopping from state  1 to  0
+avg r is  0.812627556216642
+-0.6632215738778561 4.577416117998228e-06 5e-06 1

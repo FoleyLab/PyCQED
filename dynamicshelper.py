@@ -347,7 +347,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     Psi_act = CreateBas(dim, act_idx)
     D_act = Form_Rho(Psi_act, Psi_act)
     ### Get current density matrix in polariton basis
-    [Hf, Dp_curr, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
+    #[Hf, Dp_curr, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
     ### Get nuclear force on the active state
     [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
     [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
@@ -367,7 +367,7 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     ### update density matrix
     Dl_fut = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
     ###$ Get future density matrix in polariton basis
-    [Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl_fut, Hp, Hep)
+    #[Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl_fut, Hp, Hep)
     
     ### get change in populations in polariton basis and
     ### hopping probabilities in polariton basis
