@@ -389,10 +389,17 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
     thresh = np.random.random(1)
     #print(gik[0],gik[1],gik[2],gik[3],thresh[0])
     
-    for i in range(act_idx-1,0,-1):
+    if (act_idx>1):
+        for i in range(act_idx-1,0,-1):
             if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
                 print("hopping from state",act_idx,"to ",i)
                 act_idx = i
+    if (act_idx==1):
+        if (gik[0]>=thresh[0]):
+            print("hopping from state",act_idx,"to ",0)
+            act_idx = 0
+    
+        
             
         ### use parameters set above to get initial perturbation of force for Langevin dynamics
     rp_curr = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)

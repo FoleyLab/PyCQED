@@ -11,7 +11,7 @@ import time
 
 ''' Some key parameters for the simulation! '''
 ### dissipation parameters for electronic and photonic system
-gam_diss_np = 0.000005
+gam_diss_np = 0.00001
 gam_deph_np = 0.0000
 
 gam_diss_m = 0.00000
@@ -30,7 +30,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 150000
+N_time = 300000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.001 
