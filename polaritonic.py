@@ -17,23 +17,141 @@ class polaritonic:
     #def __init__(self, mode, inputfile):
     def __init__(self, args):
         
+        '''
         self.H_electronic = np.zeros((dim,dim))
         self.H_photonic = np.zeros((dim,dim))
         self.H_interaction = np.zeros((dim,dim))
         self.H_total = np.zeros((dim,dim))
         self.H_polariton = np.zeros((dim,dim))
+        '''
+        ### Get basic options from input dictionary, 
+        ### get dimensionality and build appropriate local basis
+        self.parse_options(args)
+        ### allocate space for the Hamiltonian matrices
+        ### local basis first
+        self.H_electronic = np.zeros((self.N_basis_states,self.N_basis_states))
+        self.H_photonic = np.zeros((self.N_basis_states,self.N_basis_states))
+        self.H_interaction = np.zeros((self.N_basis_states,self.N_basis_states))
+        self.H_total = np.zeros((self.N_basis_states,self.N_basis_states))
+        ### polaritonic basis Hamiltonian
+        self.H_polariton = np.zeros((self.N_basis_states,self.N_basis_states))
         
+        self.H_e()
+        print(self.H_electronic)
         
+    ''' Next two methods used to build the local basis '''   
+    def printTheArray(self):  
+        
+        for i in range(0, self.NPhoton+1):  
+            #print(arr[i], end = " ")
+            self.local_basis[self.basis_cnt,i] = self.temp_basis[i]
+            
+        self.basis_cnt = self.basis_cnt + 1
+        
+        return 1
+    
+    # Function to generate all binary strings
+    def generateAllBinaryStrings(self, i):  
+        #print("idx",idx)
+        
+        if i == self.NPhoton+1: 
+            self.printTheArray()
+            return 
+        # First assign "0" at ith position  
+        # and try for all other permutations  
+        # for remaining positions
+        self.temp_basis[i] = 0
+        self.generateAllBinaryStrings(i + 1)  
+        
+        # And then assign "1" at ith position  
+        # and try for all other permutations  
+        # for remaining positions  
+        self.temp_basis[i] = 1
+        self.generateAllBinaryStrings(i + 1)
+        
+        return 1
+    ''' Method that parses input dictionary '''
     def parse_options(self, args):
-        if 'Lambda_List' in args:
-            lamlist = args['Lambda_List']
-            self.lambda_array = np.linspace(lamlist[0],lamlist[1],int(lamlist[2]))
+        if 'Initial_Position' in args:
+            self.R = args['Initial_Position']
+        ### arbitrary defaul initial position
         else:
-            print(" Lambda array not specified! ")
-            print(" Choosing default array of 1000 wl between 400 and 6000 nm")
-            self.lambda_array = np.linspace(400e-9,6000e-9,1000)
+            self.R = -0.678
+            
+        if 'Initial_Velocity' in args:
+            self.v = args['Initial_Velocity']
+        ### arbitray defaul initial velocity
+            self.v = -3.00e-5
+        ### how many photonic modes
+        if 'Number_of_Photons' in args:
+            self.NPhoton = args['Number_of_Photons']
+        else:
+            print(" Defaulting to one photon mode")
+            self.NPhoton = 1
+        ### what are the energies of each photonic mode
+        if 'Photon_Energys' in args:
+            self.omc = np.array(args['Photon_Energys'])
+        ### Default energy is 2.45 eV
+        else:
+            self.omc = np.zeros(self.NPhoton)
+            for i in range(0,self.NPhoton):
+                self.omc[i] = 2.45/27.211
+        ### what is the coupling strength between each photonic ode
+        ### and the molecule
+        if 'Coupling_Strengths' in args:
+            self.gc = np.array(args['Coupling_Strengths'])
+        ### Default coupling strength is 0
+        else:
+            self.gc = np.zeros(self.NPhoton)
+            
+        ''' Currently we will assume there is always just 1 molecule in the cavity,
+            so that the total number of states is determined based on the fact that there
+            is 1 2-level molecule NPhoton 2-level photons, so that the total number of 
+            basis states will be 2^(NPhoton + 1).  we will organize the basis
+            attribute as follows: it will be an array with dimensions [basis_states, (Nphoton+1)]'''
+        self.N_basis_states = 2**(self.NPhoton+1)
+        print("N_basis_states",self.N_basis_states)
+        self.local_basis = np.zeros((self.N_basis_states,self.NPhoton+1))
+        print("local_basis",self.local_basis)
+        self.temp_basis = np.zeros(self.NPhoton+1)
+        print("temp_basis",self.temp_basis)
+        self.basis_cnt = 0
 
+        
+        self.generateAllBinaryStrings(0)
+        
+        return 1
+    
+    ''' Methods used to build the Hamiltonian at the current value of self.R '''
+    def E_of_R(self):
+        Ai = np.array([0.049244, 0.010657, 0.428129, 0.373005])
+        Bi = np.array([0.18, 0.18, 0.18, 0.147])
+        Ri = np.array([-0.75, 0.85, -1.15, 1.25])
+        Di = np.array([0.073, 0.514])
+        
+        v = Ai + Bi*(self.R - Ri)**2
+        self.Eg = 0.5*(v[0] + v[1]) - np.sqrt(Di[0]**2 + 0.25 * (v[0] - v[1])**2)
+        self.Ee = 0.5*(v[2] + v[3]) - np.sqrt(Di[1]**2 + 0.25 * (v[2] - v[3])**2)
+        
+        return 1
+    
+    def H_e(self):
+        
+        ### get self.Eg and self.Ee
+        self.E_of_R()
+        
+        for i in range(0,self.N_basis_states):
+            if self.local_basis[i,0] == 0:
+                self.H_electronic[i,i] = self.Eg
+            elif self.local_basis[i,0] == 1:
+                self.H_electronic[i,i] = self.Ee
+                
+        return 1
+    
+        
+        
 
+'''
         
         if 'Thickness_List' in args:
             self.d = args['Thickness_List']
@@ -47,10 +165,11 @@ class polaritonic:
             for i in range(0,len(self.matlist)):
                 self.n[:][i] = datalib.Material_RI(self.lambda_array, self.matlist[i])
         
-        
+'''       
 ''' For the Hamiltonians '''
 ### Function to return the ground and excited-state electronic energy as a function of
 ### the nuclear coordinate $R$
+'''
 def E_of_R(R):
     Ai = np.array([0.049244, 0.010657, 0.428129, 0.373005])
     Bi = np.array([0.18, 0.18, 0.18, 0.147])
@@ -88,11 +207,13 @@ def H_ep(Hmat, g):
     Hmat[1,2] = g
     Hmat[2,1] = g
     return Hmat
+'''
 ''' The following functions are helpers for the quantum and classical dynamics '''
 
 ''' Hellman-Feynman contribution to force...
     H0 is H_p + H_ep (they don't depend on R) and He does depend 
     on R '''
+'''
 def HF_Force(Hp, Hep, He, r, dr, D):
     H0 = Hp + Hep
     ### get forward Hamiltonian
@@ -125,12 +246,12 @@ def Dp_Force(Hp, Hep, He, r, dr, D):
     residual_force = TrHD(Htot, Dprime)
     return residual_force
     
-    
+'''  
 
 ''' Quantum dynamics first '''
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
-
+'''
 def Form_Rho(Psii, Psij):
 
     D = np.outer(Psii,np.conj(Psij))
@@ -521,6 +642,7 @@ def Derivative_Coupling(r_curr, H_prime, Hp, Hep, Dl):
     
         
 '''
+'''
 def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
 
     ### Electronic part 1 ###
@@ -574,7 +696,7 @@ def Erhenfest(r_curr, v_curr, mass, D, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     ### return a list with new position and velocity
     return [r_fut, v_fut, D]
 '''
-
+'''
 def VelocityVerlet(spline,  mass, r_curr, v_curr, dt):
     ### compute acceleration ... first we need force
     F_curr = -1 * spline(r_curr)
@@ -660,8 +782,6 @@ def T2_Functional(ft, xt, m):
 
 
 '''
-hbar = 1
-r0 = -1
 '''
 
 pi = np.pi
@@ -689,14 +809,14 @@ def HO_Func(K, m,  n, r, r0):
     return psi
 
 '''
+
+'''
 r2 = np.linspace(-1,0,500)
 vx_g0 = 1/2 * k_g0 * (r2-rmin_g0)**2
 psi_g0 = HO_Func(k_g0, M, 0, r2, rmin_g0)
 
 vx_phi2 = 1/2 * k_phi2 * (r2-rmin_phi2)**2
 psi_phi2 = HO_Func(k_phi2, M, 0, r2, rmin_phi2)
-'''
-
 
 
 def Fourier(x, fx, n, k, m, r0):
@@ -709,3 +829,4 @@ def Fourier(x, fx, n, k, m, r0):
 
 
     
+'''
