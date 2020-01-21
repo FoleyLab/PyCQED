@@ -36,12 +36,47 @@ class polaritonic:
         ### polaritonic basis Hamiltonian
         self.H_polariton = np.zeros((self.N_basis_states,self.N_basis_states))
         
+        ### Density matrix in local basis
+        self.D_local = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.D_polariton = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        
+        self.transformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states))
+        self.polariton_energies = np.zeros(self.N_basis_states)
+        
+        ### Hamiltonians
         self.H_e()
         print(self.H_electronic)
         self.H_p()
         print(self.H_photonic)
         self.H_ep()
         print(self.H_interaction)
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        ### Density Matrices
+        self.D_local[self.initial_state,self.initial_state] = 1+0j
+        
+        self.Transform_L_to_P()
+        
+        ### RK4 Variables
+        self.k1 = np.zeros_like(self.D_local)
+        self.k2 = np.zeros_like(self.D_local)
+        self.k3 = np.zeros_like(self.D_local)
+        self.k4 = np.zeros_like(self.D_local)
+        self.D1 = np.zeros_like(self.D_local)
+        self.D2 = np.zeros_like(self.D_local)
+        self.D3 = np.zeros_like(self.D_local)
+        self.D4 = np.zeros_like(self.D_local)
+        
+        self.DM_Bas = np.identity(self.N_basis_states,dtype=complex)
+        
+        self.DM_Projector = np.zeros((self.N_basis_states, self.N_basis_states, self.N_basis_states),dtype=complex)
+        
+        for i in range(0, self.N_basis_states):
+            
+            self.DM_Projector[:,:,i] = np.outer(self.DM_Bas[i,:], np.conj(self.DM_Bas[i,:]))
+            
+        
+        
         
     ''' Next two methods used to build the local basis '''   
     def printTheArray(self):  
@@ -120,7 +155,14 @@ class polaritonic:
         self.temp_basis = np.zeros(self.NPhoton+1)
         print("temp_basis",self.temp_basis)
         self.basis_cnt = 0
-
+        ### What state will we be in in the local basis?
+        if 'Initial_Local_State' in args:
+            self.initial_state = args['Initial_Local_State']-1
+            if self.initial_state > self.N_basis_states:
+                self.initial_state = 0
+        else:
+            ### if not specified, assume the ground state
+            self.initial_state = 0
         
         self.generateAllBinaryStrings(0)
         
@@ -265,85 +307,131 @@ class polaritonic:
             tmp_bas[0] = -1
         
         return tmp_bas
-        
-        
-            
-            
-        
-
-
-### form coupling hamiltonian with coupling strength gamma_c for 4x4 
-### case relevant for 1-mode polariton case
-#def H_ep(Hmat, g):
-#    Hmat[1,2] = g
-#    Hmat[2,1] = g
-#    return Hmat
-        
-        
-
-'''
-        
-        if 'Thickness_List' in args:
-            self.d = args['Thickness_List']
-        ### default structure
-        else:
-            print("  Thickness array not specified!")
-            print("  Proceeding with default structure - optically thick W! ")
-            self.d = [0, 900e-9, 0]
-            self.matlist = ['Air', 'W', 'Air']
-            self.n = np.zeros((len(self.d),len(self.lambda_array)),dtype=complex)
-            for i in range(0,len(self.matlist)):
-                self.n[:][i] = datalib.Material_RI(self.lambda_array, self.matlist[i])
-        
-'''       
-''' For the Hamiltonians '''
-### Function to return the ground and excited-state electronic energy as a function of
-### the nuclear coordinate $R$
-'''
-def E_of_R(R):
-    Ai = np.array([0.049244, 0.010657, 0.428129, 0.373005])
-    Bi = np.array([0.18, 0.18, 0.18, 0.147])
-    Ri = np.array([-0.75, 0.85, -1.15, 1.25])
-    Di = np.array([0.073, 0.514])
     
-    v = Ai + Bi*(R - Ri)**2
     
-    Eg = 0.5*(v[0] + v[1]) - np.sqrt(Di[0]**2 + 0.25 * (v[0] - v[1])**2)
-    Ee = 0.5*(v[2] + v[3]) - np.sqrt(Di[1]**2 + 0.25 * (v[2] - v[3])**2)
-    return [Eg, Ee]
+    def Transform_L_to_P(self):
+        vals, vecs = LA.eig(self.H_total)
+        ### sort the eigenvectors
+        idx = vals.argsort()[::1]
+        vals = vals[idx]
+        v = vecs[:,idx]
+        ### store eigenvectors and eigenvalues
+        self.transformation_vecs_L_to_P = np.copy(v)
+        self.polariton_energies = np.copy(vals)
+        ### transform Htot with v^-1
+        vt0 = np.dot(LA.inv(v),self.H_total)
+        ### finish transformation to polariton basis, Hpl
+        self.H_polariton = np.dot(vt0,v)
+        ### now do transformation for density matrix from local to polariton basis
+        dt0 = np.dot(LA.inv(v), self.D_local)
+        self.D_polariton = np.dot(dt0,v)
+        ### return Hpl and Dpl
 
-### Forms the electronic Hamiltonian matrix at a given value of the nuclear coordinate
-### FOR 4x4 case relevant for 1-mode polariton case
-def H_e(Hmat, R):
-    PES = E_of_R(R)
-    Hmat[0,0] = PES[0]
-    Hmat[1,1] = PES[0]
-    Hmat[2,2] = PES[1]
-    Hmat[3,3] = PES[1]
-    return Hmat
+        return 1
+    
+  
+    def RK4_NA(self): #H, D, h, gamma, gam_deph, V, dc):
+        ci = 0+1j
+        ### Get k1
+        self.D1 = np.copy(self.D_local)    
+        self.k1 = np.copy(self.dt * self.DDot(self.H_total,self.D1) - 
+                          ci * self.dt * self.V * self.DDot(self.dc, self.D1) + 
+                          self.dt * self.L_Diss(self.D1))# uncomment for dephasing + 
+                          #self.dt * self.L_Deph(self.D1))
+        
+        ### Update H and D and get k2
+        self.D2 = np.copy(self.D_local+self.k1/2.)
+        self.k2 = np.copy(self.dt*self.DDot(self.H_total, self.D2) - 
+                          ci * self.dt * self.V * self.DDot(self.dc, self.D2) + 
+                          self.dt * self.L_Diss(self.D2)) #uncomment for dephasing + 
+                          #self.dt * self.L_Deph(self.D2))
+        
+        ### UPdate H and D and get k3
+        self.D3 = np.copy(self.D_local+self.k2/2)
+        self.k3 = np.copy(self.dt*self.DDot(self.H_total, self.D3) - 
+                          ci * self.dt * self.V * self.DDot(self.dc, self.D3) + 
+                          self.dt * self.L_Diss(self.D3)) # uncomment for dephasing + 
+                          #self.dt * self.L_Deph(self.D3)
+        
+        ### Update H and D and get K4
+        self.D4 = np.copy(self.D_local+self.k3)
+        self.k4 = np.copy(self.dt * self.DDot(self.H_total, self.D4) - 
+                          ci * self.dt * self.V * self.DDot(self.dc, self.D4) + 
+                          self.dt * self.L_Diss(self.D4)) # uncomment for dephasing+ 
+                          #self.dt * self.L_Deph(self.D4)
+        
+        self.D_local = np.copy(self.D_local + (1/6.)*(self.k1 + 2.*self.k2 + 2*self.k3 + self.k4))
+        
+        return 1
 
-### Form bare photon hamiltonian with frequency omega c for 4x4 case 
-### relevant for 1-mode polariton case
-def H_p(Hmat, omega):
-    Hmat[0,0] = 0.5 * omega
-    Hmat[1,1] = 1.5 * omega
-    Hmat[2,2] = 0.5 * omega
-    Hmat[3,3] = 1.5 * omega
-    return Hmat
 
-### form coupling hamiltonian with coupling strength gamma_c for 4x4 
-### case relevant for 1-mode polariton case
-def H_ep(Hmat, g):
-    Hmat[1,2] = g
-    Hmat[2,1] = g
-    return Hmat
+
+
+    ### Lindblad operator that models relaxation to the ground state
+    def L_Diss(self, D):
+        dim = len(D)
+        LD = np.zeros_like(D)
+        ### need |g><g|
+        gm = np.copy(self.DM_Projector[:,:,0])
+    
+        for k in range(1,dim):
+            gam = self.gamma[k]
+            km = np.copy(self.DM_Projector[:,:,k])
+            ### first term 2*gam*<k|D|k>|g><g|
+            t1 = np.copy(2 * gam * D[k,k] * gm)
+            ### second term is |k><k|*D
+            t2 = np.dot(km,D)
+            ### third term is  D*|k><k|
+            t3 = np.dot(D, km)
+            LD = np.copy(LD + t1 - gam*t2 - gam*t3)
+            
+        return LD
+
+
+    def DDot(H, D):
+        ci = 0.+1j
+        return -ci*(np.dot(H,D) - np.dot(D, H))
+
+
+
+    def TrHD(H, D):
+        N = len(H)
+        HD = np.dot(H,D)
+        som = 0
+        for i in range(0,N):
+            som = som + HD[i,i]
+        return np.real(som)
+
 '''
-''' The following functions are helpers for the quantum and classical dynamics '''
+def Form_Rho(Psii, Psij):
 
-''' Hellman-Feynman contribution to force...
-    H0 is H_p + H_ep (they don't depend on R) and He does depend 
-    on R '''
+    D = np.outer(Psii,np.conj(Psij))
+    return D
 '''
+
+'''
+    ### Transform density matrix from polariton to local basis
+    ### at a given R... return (off-diagonal) local Hamiltonian
+    ### and transformation vecs, also
+
+    def Transform_P_to_L(r, Dp, Hp, Hep):
+        He = np.zeros((4,4))
+        He = H_e(He, r)
+        Htot = He + Hp + Hep
+        ### get eigenvalues/vectors of total Hamiltonian at this R
+        vals, vecs = LA.eig(Htot)
+        ### sort the eigenvectors
+        idx = vals.argsort()[::1]
+        vals = vals[idx]
+        v = vecs[:,idx]
+        ### now do transformation for density matrix from local to polariton basis
+        dt0 = np.dot(v, Dp)
+        Dl = np.dot(dt0,LA.inv(v))
+        ### return Hpl and Dpl
+        return [Htot, Dl, v]
+
+    
+
 def HF_Force(Hp, Hep, He, r, dr, D):
     H0 = Hp + Hep
     ### get forward Hamiltonian
@@ -546,45 +634,7 @@ def TrHD(H, D):
 ### at a given R... return (diagonal) polariton Hamiltonian
 ### and transformation vecs, also
 
-def Transform_L_to_P(r, Dl, Hp, Hep):
-    He = np.zeros((4,4))
-    He = H_e(He, r)
-    Htot = He + Hp + Hep
-    ### get eigenvalues/vectors of total Hamiltonian at this R
-    vals, vecs = LA.eig(Htot)
-    ### sort the eigenvectors
-    idx = vals.argsort()[::1]
-    vals = vals[idx]
-    v = vecs[:,idx]
-    ### transform Htot with v^-1
-    vt0 = np.dot(LA.inv(v),Htot)
-    ### finish transformation to polariton basis, Hpl
-    Hpl = np.dot(vt0,v)
-    ### now do transformation for density matrix from local to polariton basis
-    dt0 = np.dot(LA.inv(v), Dl)
-    Dpl = np.dot(dt0,v)
-    ### return Hpl and Dpl
-    return [Hpl, Dpl, v]
 
-### Transform density matrix from polariton to local basis
-### at a given R... return (off-diagonal) local Hamiltonian
-### and transformation vecs, also
-
-def Transform_P_to_L(r, Dp, Hp, Hep):
-    He = np.zeros((4,4))
-    He = H_e(He, r)
-    Htot = He + Hp + Hep
-    ### get eigenvalues/vectors of total Hamiltonian at this R
-    vals, vecs = LA.eig(Htot)
-    ### sort the eigenvectors
-    idx = vals.argsort()[::1]
-    vals = vals[idx]
-    v = vecs[:,idx]
-    ### now do transformation for density matrix from local to polariton basis
-    dt0 = np.dot(v, Dp)
-    Dl = np.dot(dt0,LA.inv(v))
-    ### return Hpl and Dpl
-    return [Htot, Dl, v]
 
 def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
     ### get H and D in polariton basis at r_curr at t_curr

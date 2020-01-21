@@ -30,7 +30,7 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 300000
+N_time = 3# 00000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.001 
