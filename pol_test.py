@@ -20,3 +20,7 @@ options = {
 
 polt = polaritonic(options)
 print(polt.local_basis)
+
+#res = polt.action(1,'t3', 2)
+#print(res)
+#action(self, state_indx, term, photon_indx):

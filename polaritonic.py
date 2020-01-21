@@ -38,6 +38,10 @@ class polaritonic:
         
         self.H_e()
         print(self.H_electronic)
+        self.H_p()
+        print(self.H_photonic)
+        self.H_ep()
+        print(self.H_interaction)
         
     ''' Next two methods used to build the local basis '''   
     def printTheArray(self):  
@@ -148,6 +152,132 @@ class polaritonic:
                 
         return 1
     
+    def H_p(self):
+        
+        
+        for i in range(0,self.N_basis_states):
+            val = 0
+            for j in range(1,self.NPhoton+1):
+                if self.local_basis[i,j] == 0:
+                    val = val + 0.5 * self.omc[j-1]
+                elif self.local_basis[i,j] == 1:
+                    val = val + 1.5 * self.omc[j-1]
+            self.H_photonic[i,i] = val
+            
+        return 1
+    
+    def H_ep(self):
+        
+        for i in range(0,self.N_basis_states):
+            
+            for j in range(0,self.N_basis_states):
+                
+                val = 0
+                ### only proceed if one molecular basis state is \g> and the other |e>
+                if self.local_basis[i,0] != self.local_basis[j,0]:
+                    
+                    for k in range(1,self.NPhoton+1):
+                        
+                        t1 = self.action(j, 't1', k )
+                        t2 = self.action(j, 't2', k )
+                        t3 = self.action(j, 't3', k )
+                        t4 = self.action(j, 't4', k )
+                        
+                        if np.array_equal(t1, self.local_basis[i,:]):
+                            val = val + self.gc[k-1]
+                        if np.array_equal(t2, self.local_basis[i,:]):
+                            val = val + self.gc[k-1]
+                        if np.array_equal(t3, self.local_basis[i,:]):
+                            val = val + self.gc[k-1]
+                        if np.array_equal(t4, self.local_basis[i,:]):
+                            val = val + self.gc[k-1]
+
+
+                self.H_interaction[i,j] = val
+        return 1
+    
+    ### function that operates on basis state with string of 2nd
+    ### quantized operators and returns the resulting basis state
+    ### essentially we have 4 different strings to consider 
+    ### t1 = b_i^+ a_e^+ a_g
+    ### t2 = b_i^+ a_g^+ a_e
+    ### t3 = b_i   a_e^+ a_g
+    ### t4 = b_i   a_g^+ a_e
+    def action(self, state_indx, term, photon_indx):
+        ### flag that indicates if action sends state to zero or not
+        ### zero==1 means state sent to zero, zero==0 means state is valid
+        zero=0
+        ### make temporary copy of basis state
+        tmp_bas = np.copy(self.local_basis[state_indx,:])
+        ### decide how to act on it
+        if term=='t1':
+            ### first annihilate a_g and create a_e^+
+            if tmp_bas[0]==0:
+                tmp_bas[0] = 1
+            else:
+                zero=1
+            ### now create b_i^+
+            if tmp_bas[photon_indx]==0:
+                tmp_bas[photon_indx]=1
+            else:
+                zero=1
+        elif term=='t2':
+            ### first annihilate a_e and create a_g^+
+            if tmp_bas[0]==1:
+                tmp_bas[0] = 0
+            else:
+                zero=1
+            ### now create b_i^+
+            if tmp_bas[photon_indx]==0:
+                tmp_bas[photon_indx]=1
+            else:
+                zero=1
+        elif term=='t3':
+            ### first annihilate a_g and create a_e^+
+            if tmp_bas[0]==0:
+                tmp_bas[0] = 1
+            else:
+                zero=1
+            ### now annihilate b_i
+            if tmp_bas[photon_indx]==1:
+                tmp_bas[photon_indx]=0
+            else:
+                zero=1
+        elif term=='t4':
+            ### first annihilate a_e and create a_g^+
+            if tmp_bas[0]==1:
+                tmp_bas[0] = 0
+            else:
+                zero=1
+            ### now annihilate b_i
+            if tmp_bas[photon_indx]==1:
+                tmp_bas[photon_indx]=0
+            else:
+                zero=1
+        ### If invalid option given, nullify state and print warning
+        else:
+            print("Warning: Invalid operator string specified!")
+            zero=1
+        ### This is a pretty silly way to indicate the state has been 'killed',
+        ### but it will make sure that comparisons of this tmp_bas state
+        ### with any other state in the local_basis will come up false
+        if zero:
+            tmp_bas[0] = -1
+        
+        return tmp_bas
+        
+        
+            
+            
+        
+
+
+### form coupling hamiltonian with coupling strength gamma_c for 4x4 
+### case relevant for 1-mode polariton case
+#def H_ep(Hmat, g):
+#    Hmat[1,2] = g
+#    Hmat[2,1] = g
+#    return Hmat
         
         
 
