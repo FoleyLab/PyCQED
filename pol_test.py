@@ -31,11 +31,28 @@ options = {
         }
 
 polt = polaritonic(options)
-#print(polt.transformation_vecs_L_to_P)
-print("Local")
-print(polt.H_total)
-print("Polariton")
-print(polt.H_polariton)
+
+
+rlist = np.linspace(-1, 1, 200)
+PES = np.zeros((len(rlist),polt.N_basis_states))
+
+for r in range(0,len(rlist)):
+    polt.R = rlist[r]
+    polt.H_e()
+    polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
+    polt.Transform_L_to_P()
+    for i in range(0,polt.N_basis_states):
+        PES[r,i] = polt.polariton_energies[i]
+
+plt.plot(rlist, PES[:,0], label='1')
+plt.plot(rlist, PES[:,1], label='2')
+plt.plot(rlist, PES[:,2], label='3')
+plt.plot(rlist, PES[:,3], label='4')
+plt.legend()
+plt.show()
+
+
+
 
 
 N_time = 100000
@@ -46,13 +63,13 @@ for i in range(0,N_time):
     time[i] = i*polt.dt
     Energy[i] = polt.R
     polt.FSSH_Update()
-    #print(i)
+    print(time[i], polt.R)
     
 
     
 plt.plot(time, Energy, 'red')
 plt.show()
-    
+  
 
 #res = polt.action(1,'t3', 2)
 #print(res)
