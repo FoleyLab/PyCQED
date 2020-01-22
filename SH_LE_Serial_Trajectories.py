@@ -4,9 +4,9 @@ import dynamicshelper as dh
 from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
-from scipy import interpolate
-from scipy.interpolate import InterpolatedUnivariateSpline
-import matplotlib.animation as animation
+#from scipy import interpolate
+#from scipy.interpolate import InterpolatedUnivariateSpline
+#import matplotlib.animation as animation
 import time
 
 ''' Some key parameters for the simulation! '''
@@ -30,12 +30,12 @@ gc = 0.02/27.211
 
 
 ### Number of updates for dynamics
-N_time = 3# 00000
+N_time = 5000 # 00000
 
 ### position displacement increment for dynamics (a.u.)
 dr = 0.001 
 ### time displacement increment for dynamics (a.u.)
-dt = 0.2
+dt = 0.12
 
 ### initial polariton state
 pn = 2
@@ -76,7 +76,7 @@ He = np.zeros((4,4))
 Hp = np.zeros((4,4))
 Hep = np.zeros((4,4))
 Htot = np.zeros((4,4))
-PPES = np.zeros((len(rlist),4))
+#PPES = np.zeros((len(rlist),4))
 
 
 
@@ -85,6 +85,7 @@ Hp = dh.H_p(Hp, omc)
 Hep = dh.H_ep(Hep, gc)
 
 #### Get H_e(r) and diagonlize to get the polaritonic potential energy surfaces
+
 for i in range(0,len(rlist)):
     r = rlist[i]
     He = dh.H_e(He, r)
@@ -97,11 +98,11 @@ for i in range(0,len(rlist)):
         PPES[i,j] = vals[j]
         
 ### form spline for ground-state surface
-i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,1], k=3)
-Fi_spline = i_spline.derivative()
+#i_spline = InterpolatedUnivariateSpline(rlist, PPES[:,1], k=3)
+#Fi_spline = i_spline.derivative()
   
-g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
-Fg_spline = g_spline.derivative()  
+#g_spline = InterpolatedUnivariateSpline(rlist, PPES[:,0], k=3)
+#Fg_spline = g_spline.derivative()  
 
 ### Plot the surfaces
 
@@ -133,36 +134,49 @@ iso_res = np.zeros(len(vi_val))
 ### The loop that computes r_of_t and e_of_t for all the 
 ### particles in the system (currently just 1)
 ### j-loop is loop over particle number
-start = time.time()
-for j in range(0,1):
-    pn = 2
-    ### density matrix in polariton basis!
-    Dl = np.zeros((4,4),dtype=complex)
-    Dl[pn,pn] = 1.+0j
-    ri = ri_val[j]
-    vi = vi_val[j]
-    gs_r = []
+#start = time.time()
+#for j in range(0,1):
+pn = 2
+#### density matrix in polariton basis!
+Dl = np.zeros((4,4),dtype=complex)
+Dl[pn,pn] = 1.+0j
+ri = ri_val[0]
+vi = vi_val[0]
+gs_r = []
+   
+He = dh.H_e(He, ri)
+Htot = np.copy(He + Hp + Hep)
+En = dh.TrHD(Htot,Dl)
+#print(ri,vi,En)
+start = time.time() 
+### i-loop is the loop over time
+for i in range(0,N_time):
+    #### Update nuclear coordinate first
+    sim_time[i] = i*dt
+    #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
+    res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
+    ri = res[0]
+    vi = res[1]
+    ### update particle position
+    r_of_t[i,0] = ri
+    v_of_t[i,0] = vi
+    ### update particle energy
+    e_of_t[i,0] = res[2] #i_spline(ri)
+    Dl = res[3]
+    pn = res[4]
+    #print(ri,vi,res[2])
+    #p_of_t[i,0] = np.real(Dl[0,0])
+    #p_of_t[i,1] = np.real(Dl[1,1])
+    #p_of_t[i,2] = np.real(Dl[2,2])
+    #p_of_t[i,3] = np.real(Dl[3,3])
     
-    ### i-loop is the loop over time
-    for i in range(0,N_time):
-        #### Update nuclear coordinate first
-        sim_time[i] = i*dt
-        #res = dh.Erhenfest_v2(ri, vi, M, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt)
-        res = dh.FSSH_Update(ri, vi, M, g_n, T, Dl, Hp, Hep, He, gamma, gam_deph, dr, dt, pn)
-        ri = res[0]
-        vi = res[1]
-        ### update particle position
-        r_of_t[i,j] = ri
-        v_of_t[i,j] = vi
-        ### update particle energy
-        e_of_t[i,j] = res[2] #i_spline(ri)
-        Dl = res[3]
-        pn = res[4]
-        p_of_t[i,0] = np.real(Dl[0,0])
-        p_of_t[i,1] = np.real(Dl[1,1])
-        p_of_t[i,2] = np.real(Dl[2,2])
-        p_of_t[i,3] = np.real(Dl[3,3])
+end = time.time()
+
+
+
+print("elapsed time is ",end-start)
         
+'''
         if (pn==0):
             gs_r.append(ri)
     ### if we have accumulated a trajectory on the gs surface        
@@ -190,7 +204,7 @@ plt.show()
 
 
 ### set up a figure object that will hold our animation
-
+'''
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
 ax.grid()

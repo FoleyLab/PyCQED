@@ -129,6 +129,7 @@ class polaritonic:
         if 'Initial_Velocity' in args:
             self.V = args['Initial_Velocity']
         ### arbitray defaul initial velocity
+        else:
             self.V = -3.00e-5
         if 'Temperature' in args:
             self.T = args['Temperature']
@@ -469,10 +470,14 @@ class polaritonic:
         ### Get current density matrix in polariton basis
         
         self.R = self.R + self.dr
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         self.Transform_L_to_P()
         Hf = np.copy(self.H_polariton)
         
         self.R = self.R - 2*self.dr
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         self.Transform_L_to_P()
         Hb = np.copy(self.H_polariton)
 
@@ -538,6 +543,7 @@ class polaritonic:
         
         ### get force on active surface
         F_curr = self.TrHD(Hprime, D_act)
+        #print("F_curr",F_curr)
 
         ### get acceleration
         ### Langevin acceleration
@@ -547,6 +553,8 @@ class polaritonic:
         
         ### update R
         self.R = self.R + v_halftime * self.dt
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
         ### Update polariton quantities at new value of R
         self.Transform_L_to_P()
@@ -556,11 +564,15 @@ class polaritonic:
         
         ### forward step first
         self.R = self.R + self.dr
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         self.Transform_L_to_P()
         Hf = np.copy(self.H_polariton)
         
         ### backward step
         self.R = self.R - 2*self.dr
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         self.Transform_L_to_P()
         Hb = np.copy(self.H_polariton)
         ### derivative
@@ -568,6 +580,8 @@ class polaritonic:
         
         ### return R to r_curr
         self.R = self.R + self.dr
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         ### get force from Hellman-Feynman theorem
         F_fut = self.TrHD(Hprime, D_act)
         ### get energy at r_fut on active polariton surface

@@ -47,8 +47,10 @@ def H_p(Hmat, omega):
 ### form coupling hamiltonian with coupling strength gamma_c for 4x4 
 ### case relevant for 1-mode polariton case
 def H_ep(Hmat, g):
+    Hmat[0,3] = g
     Hmat[1,2] = g
     Hmat[2,1] = g
+    Hmat[3,0] = g
     return Hmat
 ''' The following functions are helpers for the quantum and classical dynamics '''
 
@@ -403,9 +405,10 @@ def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_de
             
         ### use parameters set above to get initial perturbation of force for Langevin dynamics
     rp_curr = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
-
+    #print(rp_curr)
     ### get force on active surface
     F_curr = TrHD(Hprime, D_act)
+    #print("F_curr",F_curr)
 
     ### get acceleration
     ### Langevin acceleration
