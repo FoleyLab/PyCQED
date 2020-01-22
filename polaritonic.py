@@ -36,9 +36,13 @@ class polaritonic:
         ### polaritonic basis Hamiltonian
         self.H_polariton = np.zeros((self.N_basis_states,self.N_basis_states))
         
-        ### Density matrix in local basis
+        ### Density matrix  arrays
         self.D_local = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
         self.D_polariton = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        
+        ### Population arrays 
+        self.population_local = np.zeros(self.N_basis_states)
+        self.population_polariton = np.zeros(self.N_basis_states)
         
         self.transformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states))
         self.polariton_energies = np.zeros(self.N_basis_states)
@@ -55,6 +59,9 @@ class polaritonic:
         ### Density Matrices
         self.D_local[self.initial_state,self.initial_state] = 1+0j
         
+        ### derivative coupling
+        self.dc = np.zeros((self.N_basis_states,self.N_basis_states))
+        
         self.Transform_L_to_P()
         
         ### RK4 Variables
@@ -69,11 +76,13 @@ class polaritonic:
         
         self.DM_Bas = np.identity(self.N_basis_states,dtype=complex)
         
-        self.DM_Projector = np.zeros((self.N_basis_states, self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.DM_Projector = np.zeros((self.N_basis_states, self.N_basis_states, self.N_basis_states,self.N_basis_states),dtype=complex)
         
         for i in range(0, self.N_basis_states):
-            
-            self.DM_Projector[:,:,i] = np.outer(self.DM_Bas[i,:], np.conj(self.DM_Bas[i,:]))
+            for j in range(0, self.N_basis_states):
+                self.DM_Projector[:,:,i,j] = np.outer(self.DM_Bas[i,:], np.conj(self.DM_Bas[j,:]))
+                
+        self.Energy = self.TrHD(self.H_total, self.D_local)
             
         
         
@@ -116,11 +125,33 @@ class polaritonic:
         ### arbitrary defaul initial position
         else:
             self.R = -0.678
-            
+        
         if 'Initial_Velocity' in args:
-            self.v = args['Initial_Velocity']
+            self.V = args['Initial_Velocity']
         ### arbitray defaul initial velocity
-            self.v = -3.00e-5
+            self.V = -3.00e-5
+        if 'Temperature' in args:
+            self.T = args['Temperature']
+        else:
+            self.T = 0.00095
+        if 'Friction' in args:
+            self.gamma_nuc = args['Friction']
+        else:
+            self.gamma_nuc = 0.000011
+        ### read mass
+        if 'Mass' in args:
+            self.M = args['Mass']
+        ### Default mass is 1009883 a.u.
+        else: 
+            self.M = 1009883
+        if 'Time_Step' in args:
+            self.dt = args['Time_Step']
+        else:
+            self.dt = 0.12
+        if 'Space_Step' in args:
+            self.dr = args['Space_Step']
+        else:
+            self.dr = 0.001
         ### how many photonic modes
         if 'Number_of_Photons' in args:
             self.NPhoton = args['Number_of_Photons']
@@ -142,7 +173,13 @@ class polaritonic:
         ### Default coupling strength is 0
         else:
             self.gc = np.zeros(self.NPhoton)
-            
+        if 'Photon_Lifetimes' in args:
+            self.gamma_photon = np.array(args['Photon_Lifetimes'])
+        ### Default lifetime is 0.1 meV
+        else:
+            self.gamma_photon = np.zeros(self.NPhoton)
+            for i in range(0,self.NPhoton):
+                self.gamma_photon[i] = 0.1/27211.
         ''' Currently we will assume there is always just 1 molecule in the cavity,
             so that the total number of states is determined based on the fact that there
             is 1 2-level molecule NPhoton 2-level photons, so that the total number of 
@@ -163,8 +200,26 @@ class polaritonic:
         else:
             ### if not specified, assume the ground state
             self.initial_state = 0
+        ### Active surface is defined in the polariton basis
+        ### so it can be different from the initial local state, in principle
+        ### however, typically, the two will be very similar so we
+        ### will default to using the same state index for both!
+        if 'Active_Surface' in args:
+            self.active_index = args['Active_Surface']-1
+            if self.active_index > self.N_basis_states:
+                self.active_index = 0
+        else:
+            self.active_index = self.initial_state
         
         self.generateAllBinaryStrings(0)
+        
+        ### get photon dissipation rates for Lindblad operator
+        self.gamma_diss = np.zeros(self.N_basis_states)
+        for i in range(0,self.N_basis_states):
+            for j in range(1,self.NPhoton+1):
+                if self.local_basis[i,j]==1:
+                    self.gamma_diss[i] = self.gamma_diss[i] + self.gamma_photon[j-1]
+                    
         
         return 1
     
@@ -341,7 +396,7 @@ class polaritonic:
         
         ### Update H and D and get k2
         self.D2 = np.copy(self.D_local+self.k1/2.)
-        self.k2 = np.copy(self.dt*self.DDot(self.H_total, self.D2) - 
+        self.k2 = np.copy(self.dt * self.DDot(self.H_total, self.D2) - 
                           ci * self.dt * self.V * self.DDot(self.dc, self.D2) + 
                           self.dt * self.L_Diss(self.D2)) #uncomment for dephasing + 
                           #self.dt * self.L_Deph(self.D2))
@@ -372,11 +427,11 @@ class polaritonic:
         dim = len(D)
         LD = np.zeros_like(D)
         ### need |g><g|
-        gm = np.copy(self.DM_Projector[:,:,0])
+        gm = np.copy(self.DM_Projector[:,:,0,0])
     
         for k in range(1,dim):
-            gam = self.gamma[k]
-            km = np.copy(self.DM_Projector[:,:,k])
+            gam = self.gamma_diss[k]
+            km = np.copy(self.DM_Projector[:,:,k,k])
             ### first term 2*gam*<k|D|k>|g><g|
             t1 = np.copy(2 * gam * D[k,k] * gm)
             ### second term is |k><k|*D
@@ -388,28 +443,182 @@ class polaritonic:
         return LD
 
 
-    def DDot(H, D):
+    def DDot(self, H, D):
         ci = 0.+1j
         return -ci*(np.dot(H,D) - np.dot(D, H))
 
 
 
-    def TrHD(H, D):
+    def TrHD(self, H, D):
         N = len(H)
         HD = np.dot(H,D)
         som = 0
         for i in range(0,N):
             som = som + HD[i,i]
         return np.real(som)
+    
+
+    def FSSH_Update(self): 
+        #r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
+        pop_fut = np.zeros(self.N_basis_states)
+        pop_dot = np.zeros(self.N_basis_states)
+        gik = np.zeros(self.N_basis_states)
+    
+        ### Get density matrix for active state
+        D_act = self.DM_Projector[:,:,self.active_index,self.active_index]
+        ### Get current density matrix in polariton basis
+        
+        self.R = self.R + self.dr
+        self.Transform_L_to_P()
+        Hf = np.copy(self.H_polariton)
+        
+        self.R = self.R - 2*self.dr
+        self.Transform_L_to_P()
+        Hb = np.copy(self.H_polariton)
+
+        Hprime = (Hf-Hb)/(2*self.dr)
+        
+        ### go back to r_curr
+        self.R = self.R + self.dr
+        
+        ### Get derivative coupling at current position
+        self.Derivative_Coupling(Hprime)
+        
+        ### Get total Hamiltonian at current position
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+       
+        ### compute populations in all states from active down to ground
+        
+        ### update populations in local basis
+        for i in range(0,self.N_basis_states):
+            self.population_local[i] = np.real(self.D_local[i, i])
+            
+        ### update density matrix
+        self.RK4_NA() 
+        
+        ### get future populations in local basis
+        for i in range(0,self.N_basis_states):
+            pop_fut[i] = np.real(self.D_local[i, i])
+             
+        
+        ### get change in populations in local basis to get hoppin
+        for i in range(0,self.active_index+1):
+            pop_dot[i] = np.real(pop_fut[i] - self.population_local[i])/self.dt
+            g = np.real( pop_dot[i] / self.population_local[self.active_index] * self.dt)
+            if (g<0):
+                g = 0
+            
+            ### Get cumulative probability
+            if (i==0):
+                gik[i] = g
+            else:
+                gik[i] = g + gik[i-1]
+        #print(gik)
+        
+        ### decide if we want to hop to state k, if any
+        thresh = np.random.random(1)
+        #print(gik[0],gik[1],gik[2],gik[3],thresh[0])
+        #print(gik[0],gik[1],gik[2],gik[3],thresh[0])
+    
+        if (self.active_index>1):
+            for i in range(self.active_index-1,0,-1):
+                if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
+                    print("hopping from state",self.active_index,"to ",i)
+                    self.active_index = i
+        if (self.active_index==1):
+            if (gik[0]>=thresh[0]):
+                print("hopping from state",self.active_index,"to ",0)
+                self.active_index = 0
+    
+        
+            
+        ### use parameters set above to get initial perturbation of force for Langevin dynamics
+        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+        
+        ### get force on active surface
+        F_curr = self.TrHD(Hprime, D_act)
+
+        ### get acceleration
+        ### Langevin acceleration
+        a_curr = (-1 * F_curr + rp_curr) / self.M - self.gamma_nuc * self.V
+        ### bbk update to velocity and position
+        v_halftime = self.V + a_curr * self.dt / 2
+        
+        ### update R
+        self.R = self.R + v_halftime * self.dt
+        
+        ### Update polariton quantities at new value of R
+        self.Transform_L_to_P()
+        H_act = np.copy(self.H_polariton)
+        
+        ### get derivative of Hpl at r_fut
+        
+        ### forward step first
+        self.R = self.R + self.dr
+        self.Transform_L_to_P()
+        Hf = np.copy(self.H_polariton)
+        
+        ### backward step
+        self.R = self.R - 2*self.dr
+        self.Transform_L_to_P()
+        Hb = np.copy(self.H_polariton)
+        ### derivative
+        Hprime = (Hf-Hb)/(2*self.dr)
+        
+        ### return R to r_curr
+        self.R = self.R + self.dr
+        ### get force from Hellman-Feynman theorem
+        F_fut = self.TrHD(Hprime, D_act)
+        ### get energy at r_fut on active polariton surface
+        self.Energy = self.TrHD(H_act, D_act)
+        
+        ### get random force 
+        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+        ### get acceleration
+        a_fut = (-1 * F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
+        ### get updated velocity
+        ### vv update
+        ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+        ### bbk update
+        self.V = (v_halftime + a_fut * self.dt/2) * (1/(1 + self.gamma_nuc * self.dt/2))
+        return 1
+
+    
+    def Derivative_Coupling(self, H_prime):
+        ### get polariton hamiltonian in current geometry
+        ### Does this transformation need to be performed every time we call DC?
+        self.Transform_L_to_P()
+        
+        for i in range(0, self.N_basis_states):
+            Vii = self.TrHD(self.H_polariton, self.DM_Projector[:,:,i,i])
+            
+            for j in range(i, self.N_basis_states):
+                if (i!=j):
+                    Vjj = self.TrHD(self.H_polariton, self.DM_Projector[:,:,j,j])
+                    #D_ij = np.copy(self.DM_Projector[:,:,i,j])
+                    cup = self.TrHD(H_prime, self.DM_Projector[:,:,i,j])
+                    self.dc[i,j] = cup/(Vjj-Vii)
+                    self.dc[j,i] = cup/(Vii-Vjj)
+                    
+        return 1
 
 '''
-def Form_Rho(Psii, Psij):
 
-    D = np.outer(Psii,np.conj(Psij))
-    return D
-'''
-
-'''
+    
+    
+    def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
+        arg = 2 * v * np.real(dc[idx_j, idx_k] * Dl[idx_k, idx_j]) * dt
+        
+        if (arg<0):
+            rate = 0
+            
+        else:
+            rate = arg / np.real(Dl[idx_j, idx_j])
+    
+        #print(dc[idx_j, idx_k], np.real(Dl[idx_k, idx_j]), np.real(Dl[idx_j, idx_j]), v[0], rate)
+        return rate
+        
     ### Transform density matrix from polariton to local basis
     ### at a given R... return (off-diagonal) local Hamiltonian
     ### and transformation vecs, also
@@ -470,98 +679,6 @@ def Dp_Force(Hp, Hep, He, r, dr, D):
 ### should create a function that takes a wavefunction in vector
 ### format and computes a density matrix
 '''
-def Form_Rho(Psii, Psij):
-
-    D = np.outer(Psii,np.conj(Psij))
-    return D
-
-
-
-def RK4_WP(Vx, M, h, Phi, xt):
-    k1 = np.zeros_like(Phi)
-    k2 = np.zeros_like(Phi)
-    k3 = np.zeros_like(Phi)
-    k4 = np.zeros_like(Phi)
-    Phi1 = np.zeros_like(Phi)
-    Phi2 = np.zeros_like(Phi)
-    Phi3 = np.zeros_like(Phi)
-    Phi4 = np.zeros_like(Phi)
-    
-    Phi1 = np.copy(Phi)
-    k1 = h*Phi_Dot(Phi1, xt, M, Vx)
-    
-    Phi2 = np.copy(Phi + k1/2)
-    k2 = h*Phi_Dot(Phi2, xt, M, Vx)
-    
-    Phi3 = np.copy(Phi + k2/2)
-    k3 = h*Phi_Dot(Phi3, xt, M, Vx)
-    
-    Phi4 = np.copy(Phi + k3)
-    k4 = h*Phi_Dot(Phi4, xt, M, Vx)
-    
-    Phif = Phi + (1/6.)*(k1 + 2*k2 + 2*k3 + k4)
-    return Phif
-
-
-def RK4(H, D, h, gamma, gam_deph):
-    k1 = np.zeros_like(D)
-    k2 = np.zeros_like(D)
-    k3 = np.zeros_like(D)
-    k4 = np.zeros_like(D)
-    D1 = np.zeros_like(D)
-    D2 = np.zeros_like(D)
-    D3 = np.zeros_like(D)
-    D4 = np.zeros_like(D)
-    
-    ### Get k1
-    D1 = np.copy(D)    
-    k1 = h*DDot(H,D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
-    
-    ### Update H and D and get k2
-    D2 = np.copy(D+k1/2.)
-    k2 = h*DDot(H, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
-    
-    ### UPdate H and D and get k3
-    D3 = np.copy(D+k2/2)
-    k3 = h*DDot(H, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
-    
-    ### Update H and D and get K4
-    D4 = np.copy(D+k3)
-    k4 = h*DDot(H, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
-    
-    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
-    return Df
-
-
-def RK4_NA(H, D, h, gamma, gam_deph, V, dc):
-    ci = 1+0j
-    k1 = np.zeros_like(D)
-    k2 = np.zeros_like(D)
-    k3 = np.zeros_like(D)
-    k4 = np.zeros_like(D)
-    D1 = np.zeros_like(D)
-    D2 = np.zeros_like(D)
-    D3 = np.zeros_like(D)
-    D4 = np.zeros_like(D)
-    
-    ### Get k1
-    D1 = np.copy(D)    
-    k1 = h*DDot(H,D1) - ci*h*V*DDot(dc, D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
-    
-    ### Update H and D and get k2
-    D2 = np.copy(D+k1/2.)
-    k2 = h*DDot(H, D2) - ci*h*V*DDot(dc, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
-    
-    ### UPdate H and D and get k3
-    D3 = np.copy(D+k2/2)
-    k3 = h*DDot(H, D3) - ci*h*V*DDot(dc, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
-    
-    ### Update H and D and get K4
-    D4 = np.copy(D+k3)
-    k4 = h*DDot(H, D4) - ci*h*V*DDot(dc, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
-    
-    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
-    return Df
 
 ### Lindblad operator that models dephasing
 def L_Deph(D, gam):
@@ -584,237 +701,9 @@ def L_Deph(D, gam):
 
 
 
-### Creates basis vector for state k
-### k=0 -> ground state, k=1 -> first excited-state, etc
-
-def CreateBas(dim, k):
-    bas = np.zeros(dim)
-    bas[k] = 1
-    return bas
-
-### Lindblad operator that models relaxation to the ground state
-def L_Diss(D, gamma):
-    dim = len(D)
-    LD = np.zeros_like(D)
-    ### need |g><g|
-    bra_1 = CreateBas(dim, 0)
-    gm = Form_Rho(bra_1, bra_1)
-    
-    for k in range(1,dim):
-        gam = gamma[k]
-        bra_k = CreateBas(dim, k)
-        km = Form_Rho(bra_k, bra_k)
-        
-        ### first term 2*gam*<k|D|k>|g><g|
-        t1 = 2*gam*D[k][k]*gm
-        ### second term is |k><k|*D
-        t2 = np.dot(km,D)
-        ### third term is  D*|k><k|
-        t3 = np.dot(D, km)
-        LD = LD + t1 - gam*t2 - gam*t3
-        
-    return LD
-
-
-def DDot(H, D):
-    ci = 0.+1j
-    return -ci*(np.dot(H,D) - np.dot(D, H))
-
-
-
-def TrHD(H, D):
-    N = len(H)
-    HD = np.dot(H,D)
-    som = 0
-    for i in range(0,N):
-        som = som + HD[i,i]
-    return np.real(som)
-
-### Transform density matrix from local to polariton basis
-### at a given R... return (diagonal) polariton Hamiltonian
-### and transformation vecs, also
-
-
-
-def Erhenfest_v2(r_curr, v_curr, mass, Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt):
-    ### get H and D in polariton basis at r_curr at t_curr
-    [Hpl, Dpl, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
-    ### get derivative of Hpl at r_curr
-    [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
-    [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
-    Hprime = (Hf-Hb)/(2*dr)
-    
-    #print("derivative coupling matrix:",Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl))
-    ### get force from Hellman-Feynman theorem
-    F_curr = TrHD(Hprime, Dpl)
-    ### get acceleration
-    a_curr = -1 * F_curr / mass
-    ### update position
-    r_fut = r_curr + v_curr*dt + 1/2 * a_curr*dt**2
-    ### get H in local basis at r_fut
-    Hel = H_e(Hel, r_fut)
-    Hl = Hel + Hp + Hep
-    ### Update density matrix in local basis
-    Dl = RK4(Hl, Dl, dt, gamma, gam_deph)
-    ### Get H and D in polariton basis at r_fut and t_fut
-    [Hpl, Dpl, v] = Transform_L_to_P(r_fut, Dl, Hp, Hep)
-    ### get derivative of Hpl at r_fut
-    [Hf, Df, v] = Transform_L_to_P(r_fut+dr, Dl, Hp, Hep)
-    [Hb, Df, v] = Transform_L_to_P(r_fut-dr, Dl, Hp, Hep)
-    Hprime = (Hf-Hb)/(2*dr)
-    ### get force from Hellman-Feynman theorem
-    F_fut = TrHD(Hprime, Dpl)
-    ### get energy at r_fut
-    E_fut = TrHD(Hpl, Dpl)
-    ### get acceleration
-    a_fut = -1 * F_fut / mass
-    ### get updated velocity
-    v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
-    
-    return [r_fut, v_fut, E_fut, Dl]
-
-
-
-def FSSH_Update(r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
-    dim = len(Dl)
-    pop_curr = np.zeros(dim)
-    pop_fut = np.zeros(dim)
-    pop_dot = np.zeros(dim)
-    gik = np.zeros(dim)
-    
-    ### Get density matrix for active state
-    Psi_act = CreateBas(dim, act_idx)
-    D_act = Form_Rho(Psi_act, Psi_act)
-    ### Get current density matrix in polariton basis
-    #[Hf, Dp_curr, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
-    ### Get nuclear force on the active state
-    [Hf, Df, v] = Transform_L_to_P(r_curr+dr, Dl, Hp, Hep)
-    [Hb, Df, v] = Transform_L_to_P(r_curr-dr, Dl, Hp, Hep)
-    Hprime = (Hf-Hb)/(2*dr)
-    
-    ### Get derivative coupling
-    dc = Derivative_Coupling(r_curr, Hprime, Hp, Hep, Dl)
-    Hel = H_e(Hel, r_curr)
-    Hl = Hel + Hp + Hep
-    
-    ### compute populations in all states from active down to ground
-    
-    ### loop from 0 to avail_states
-    for i in range(0,act_idx+1):
-        pop_curr[i] = np.real(Dl[i, i])
-
-    ### update density matrix
-    Dl_fut = RK4_NA(Hl, Dl, dt, gamma, gam_deph, v_curr, dc)
-    ###$ Get future density matrix in polariton basis
-    #[Hf, Dp_fut, v] = Transform_L_to_P(r_curr, Dl_fut, Hp, Hep)
-    
-    ### get change in populations in polariton basis and
-    ### hopping probabilities in polariton basis
-    #print(np.real(Dp_fut[0,0]-Dp_curr[0,0]), np.real(Dp_fut[1,1]-Dp_curr[1,1]), np.real(Dp_fut[2,2]-Dp_curr[2,2]))
-    for i in range(0,act_idx+1):
-        pop_dot[i] = np.real(Dl_fut[i,i] - Dl[i,i])/dt
-        g = np.real( pop_dot[i] / Dl[act_idx,act_idx] * dt)
-        if (g<0):
-            g = 0
-            
-        ### Get cumulative probability
-        if (i==0):
-            gik[i] = g
-        else:
-            gik[i] = g + gik[i-1]
-    #print(gik)
-        
-    ### decide if we want to hop to state k, if any
-    thresh = np.random.random(1)
-    #print(gik[0],gik[1],gik[2],gik[3],thresh[0])
-    
-    if (act_idx>1):
-        for i in range(act_idx-1,0,-1):
-            if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
-                print("hopping from state",act_idx,"to ",i)
-                act_idx = i
-    if (act_idx==1):
-        if (gik[0]>=thresh[0]):
-            print("hopping from state",act_idx,"to ",0)
-            act_idx = 0
-    
-        
-            
-        ### use parameters set above to get initial perturbation of force for Langevin dynamics
-    rp_curr = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
-
-    ### get force on active surface
-    F_curr = TrHD(Hprime, D_act)
-
-    ### get acceleration
-    ### Langevin acceleration
-    a_curr = (-1 * F_curr + rp_curr) / mass - g_nuc * v_curr
-    ### bbk update to velocity and position
-    v_halftime = v_curr + a_curr*dt/2
-
-    r_fut = r_curr + v_halftime * dt
-    
-    ### get H in local basis at r_fut
-    #Hel = H_e(Hel, r_fut)
-    #Hl = Hel + Hp + Hep
-    ### Get H and D in polariton basis at r_fut and t_fut
-    [Hpl, Dpl, v] = Transform_L_to_P(r_fut, Dl, Hp, Hep)
-    ### get derivative of Hpl at r_fut
-    [Hf, Df, v] = Transform_L_to_P(r_fut+dr, Dl, Hp, Hep)
-    [Hb, Df, v] = Transform_L_to_P(r_fut-dr, Dl, Hp, Hep)
-    Hprime = (Hf-Hb)/(2*dr)
-    ### get force from Hellman-Feynman theorem
-    F_fut = TrHD(Hprime, D_act)
-    ### get energy at r_fut
-    E_fut = TrHD(Hpl, D_act)
-
-    rp_fut = np.sqrt(2 * T * g_nuc * mass / dt) * np.random.normal(0,1)
-    ### get acceleration
-    a_fut = (-1 * F_fut + rp_fut) / mass - g_nuc * v_halftime
-    ### get updated velocity
-    ### vv update
-    ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
-    ### bbk update
-    v_fut = (v_halftime + a_fut * dt/2) * (1/(1 + g_nuc * dt/2))
-    Dl = np.copy(Dl_fut)
-    return [r_fut, v_fut, E_fut, Dl, act_idx]
-
 ### evaluate the hopping rate from state j -> k
 
-def Hopping_Rate(dc, Dl, v, dt, idx_j, idx_k):
-    
-    arg = 2 * v * np.real(dc[idx_j, idx_k] * Dl[idx_k, idx_j]) * dt
-    if (arg<0):
-        rate = 0
-    else:
-        rate = arg / np.real(Dl[idx_j, idx_j])
-    
-    print(dc[idx_j, idx_k], np.real(Dl[idx_k, idx_j]), np.real(Dl[idx_j, idx_j]), v[0], rate)
-    return rate
-    
-    
 
-def Derivative_Coupling(r_curr, H_prime, Hp, Hep, Dl):
-    dim = len(H_prime)
-    ### create empty array of derivative coupling elements
-    dc = np.zeros((dim, dim))
-    ### get polariton hamiltonian in current geometry
-    [Hpl, Dpl, v] = Transform_L_to_P(r_curr, Dl, Hp, Hep)
-    
-    for i in range(0, dim):
-        psi_i = CreateBas(dim, i)
-        D_ii = Form_Rho(psi_i, psi_i)
-        Vii = TrHD(Hpl, D_ii)
-        for j in range(i,dim):
-            if (i!=j):
-                psi_j = CreateBas(dim, j)
-                D_jj = Form_Rho(psi_j, psi_j)
-                Vjj = TrHD(Hpl, D_jj)
-                D_ij = Form_Rho(psi_i, psi_j)
-                cup = TrHD(H_prime, D_ij)
-                dc[i,j] = cup/(Vjj-Vii)
-                dc[j,i] = cup/(Vii-Vjj)
-    return dc
         
             
             
