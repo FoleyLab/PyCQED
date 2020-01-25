@@ -49,11 +49,11 @@ class polaritonic:
         
         ### Hamiltonians
         self.H_e()
-        print(self.H_electronic)
+        #print(self.H_electronic)
         self.H_p()
-        print(self.H_photonic)
+        #print(self.H_photonic)
         self.H_ep()
-        print(self.H_interaction)
+        #print(self.H_interaction)
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
         ### Density Matrices
@@ -187,11 +187,11 @@ class polaritonic:
             basis states will be 2^(NPhoton + 1).  we will organize the basis
             attribute as follows: it will be an array with dimensions [basis_states, (Nphoton+1)]'''
         self.N_basis_states = 2**(self.NPhoton+1)
-        print("N_basis_states",self.N_basis_states)
+        #print("N_basis_states",self.N_basis_states)
         self.local_basis = np.zeros((self.N_basis_states,self.NPhoton+1))
-        print("local_basis",self.local_basis)
+        #print("local_basis",self.local_basis)
         self.temp_basis = np.zeros(self.NPhoton+1)
-        print("temp_basis",self.temp_basis)
+        #print("temp_basis",self.temp_basis)
         self.basis_cnt = 0
         ### What state will we be in in the local basis?
         if 'Initial_Local_State' in args:
@@ -546,11 +546,11 @@ class polaritonic:
         if (self.active_index>1):
             for i in range(self.active_index-1,0,-1):
                 if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
-                    print("hopping from state",self.active_index,"to ",i)
+                    #print("hopping from state",self.active_index,"to ",i)
                     self.active_index = i
         if (self.active_index==1):
             if (gik[0]>=thresh[0]):
-                print("hopping from state",self.active_index,"to ",0)
+                #print("hopping from state",self.active_index,"to ",0)
                 self.active_index = 0
     
         

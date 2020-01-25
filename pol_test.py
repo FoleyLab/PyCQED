@@ -16,8 +16,8 @@ au_to_ps = 2.4188e-17 * 1e12
 options = {
         'Number_of_Photons': 1,
         'Photon_Energys': [2.45/27.211],
-        'Coupling_Strengths': [0.05/27.211], 
-        'Photon_Lifetimes': [0.1/27211.],
+        'Coupling_Strengths': [0.07/27.211], 
+        'Photon_Lifetimes': [1.0/27211.],
         'Initial_Position': -0.6940536701380835,
         'Initial_Velocity': 3.0711164130420224e-06,
         'Mass': 1009883,
@@ -81,7 +81,7 @@ print(polt.R,polt.V,polt.Energy)
 
 
 
-N_time = 200000
+N_time = 900000
 sim_time = np.zeros(int(N_time/200)+1)
 r_of_t = np.zeros(int(N_time/200)+1)
 e_of_t = np.zeros(int(N_time/200)+1)
