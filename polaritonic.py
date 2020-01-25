@@ -385,6 +385,13 @@ class polaritonic:
 
         return 1
     
+    def Transform_P_to_L(self):
+        ### now do transformation for density matrix from local to polariton basis
+        self.D_local = np.outer(self.transformation_vecs_L_to_P[:,self.initial_state], 
+                                np.conj(self.transformation_vecs_L_to_P[:,self.initial_state])) 
+
+        ### return Hpl and Dpl
+        return 1
   
     def RK4_NA(self): #H, D, h, gamma, gam_deph, V, dc):
         ci = 0+1j
@@ -460,57 +467,67 @@ class polaritonic:
     
 
     def FSSH_Update(self): 
-        #r_curr, v_curr, mass, g_nuc, T,  Dl, Hp, Hep, Hel, gamma, gam_deph, dr, dt, act_idx):
+        ### allocate a few arrays we will need
         pop_fut = np.zeros(self.N_basis_states)
         pop_dot = np.zeros(self.N_basis_states)
         gik = np.zeros(self.N_basis_states)
     
-        ### Get density matrix for active state
-        D_act = self.DM_Projector[:,:,self.active_index,self.active_index]
-        ### Get current density matrix in polariton basis
+        ### Get density matrix in local basis corresponding to the
+        ### current active index (which refers to a surface in the polariton basis)
         
+        ### Get transformation vectors at current R
+        self.Transform_L_to_P()
+        ### Get corresponding density matrix in local basis
+        D_act = np.outer(self.transformation_vecs_L_to_P[:,self.active_index], 
+                         np.conj(self.transformation_vecs_L_to_P[:,self.active_index]))
+        
+        ### Get dH/dR in local basis
         self.R = self.R + self.dr
         self.H_e()
-        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
-        Hf = np.copy(self.H_polariton)
+        Hf = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+
         
         self.R = self.R - 2*self.dr
         self.H_e()
-        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
-        Hb = np.copy(self.H_polariton)
+        Hb = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
 
-        Hprime = (Hf-Hb)/(2*self.dr)
+        Hprime = np.copy((Hf-Hb)/(2*self.dr))
         
         ### go back to r_curr
         self.R = self.R + self.dr
         
-        ### Get derivative coupling at current position
-        self.Derivative_Coupling(Hprime)
-        
         ### Get total Hamiltonian at current position
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        ### Get derivative coupling at current position... 
+        ### Note transformation vecs are still at current value of self.R,
+        ### they were not recomputed at any displaced values
+        self.Derivative_Coupling(Hprime)
+        
+
        
         ### compute populations in all states from active down to ground
         
         ### update populations in local basis
         for i in range(0,self.N_basis_states):
             self.population_local[i] = np.real(self.D_local[i, i])
+            self.population_polariton[i] = np.real(self.D_polariton[i, i])
             
         ### update density matrix
         self.RK4_NA() 
+        ### get updated density matrix in polariton basis as well
+        self.Transform_L_to_P()
         
         ### get future populations in local basis
         for i in range(0,self.N_basis_states):
-            pop_fut[i] = np.real(self.D_local[i, i])
+            pop_fut[i] = np.real(self.D_polariton[i, i])
              
         
         ### get change in populations in local basis to get hoppin
         for i in range(0,self.active_index+1):
-            pop_dot[i] = np.real(pop_fut[i] - self.population_local[i])/self.dt
-            g = np.real( pop_dot[i] / self.population_local[self.active_index] * self.dt)
+            pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
+            g = np.real( pop_dot[i] / self.population_polariton[self.active_index] * self.dt)
             if (g<0):
                 g = 0
             
@@ -556,9 +573,7 @@ class polaritonic:
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
-        ### Update polariton quantities at new value of R
-        self.Transform_L_to_P()
-        H_act = np.copy(self.H_polariton)
+        H_act = np.copy(self.H_total)
         
         ### get derivative of Hpl at r_fut
         
@@ -566,17 +581,15 @@ class polaritonic:
         self.R = self.R + self.dr
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
-        Hf = np.copy(self.H_polariton)
+        Hf = np.copy(self.H_total)
         
         ### backward step
         self.R = self.R - 2*self.dr
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
-        Hb = np.copy(self.H_polariton)
+        Hb = np.copy(self.H_total)
         ### derivative
-        Hprime = (Hf-Hb)/(2*self.dr)
+        Hprime = np.copy((Hf-Hb)/(2*self.dr))
         
         ### return R to r_curr
         self.R = self.R + self.dr
@@ -600,18 +613,23 @@ class polaritonic:
 
     
     def Derivative_Coupling(self, H_prime):
-        ### get polariton hamiltonian in current geometry
-        ### Does this transformation need to be performed every time we call DC?
-        self.Transform_L_to_P()
+        ### Compute derivative coupling in local basis
         
         for i in range(0, self.N_basis_states):
-            Vii = self.TrHD(self.H_polariton, self.DM_Projector[:,:,i,i])
+            D_ii = np.outer(self.transformation_vecs_L_to_P[:,i], 
+                         np.conj(self.transformation_vecs_L_to_P[:,i]))
+            Vii = self.TrHD(self.H_total, D_ii)
             
             for j in range(i, self.N_basis_states):
                 if (i!=j):
-                    Vjj = self.TrHD(self.H_polariton, self.DM_Projector[:,:,j,j])
+                    D_jj = np.outer(self.transformation_vecs_L_to_P[:,j], 
+                         np.conj(self.transformation_vecs_L_to_P[:,j]))
+                    D_ij = np.outer(self.transformation_vecs_L_to_P[:,i], 
+                         np.conj(self.transformation_vecs_L_to_P[:,j]))
+                    
+                    Vjj = self.TrHD(self.H_total, D_jj)
                     #D_ij = np.copy(self.DM_Projector[:,:,i,j])
-                    cup = self.TrHD(H_prime, self.DM_Projector[:,:,i,j])
+                    cup = self.TrHD(H_prime, D_ij)
                     self.dc[i,j] = cup/(Vjj-Vii)
                     self.dc[j,i] = cup/(Vii-Vjj)
                     
