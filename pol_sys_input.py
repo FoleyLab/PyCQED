@@ -32,6 +32,16 @@ gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
+### get prefix for data file names
+prefix = sys.argv[6]
+
+### filename to write nuclear trajectory to
+nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
+### filename to wrote PES to
+pes_fn = "Data/" + prefix + '_pes.txt'
+### filename to write electronic/polaritonic dynamics to
+ed_fn = "Data/" + prefix + '_electronic.txt'
+
 ### Number of updates!
 N_time = 4000000
 
@@ -67,58 +77,79 @@ polt.D_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=comp
 polt.D_polariton[polt.initial_state,polt.initial_state] = 1+0j
 polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
 
-
+polt.Transform_L_to_P()
 
 rlist = np.linspace(-1.5, 1.5, 200)
 PES = np.zeros((len(rlist),polt.N_basis_states))
-Local_En = np.zeros(2000)
-Pol_En = np.zeros(2000)
 
-
+### Get PES of polaritonic system and write to file pes_fn
+pes_file = open(pes_fn, "w")
 for r in range(0,len(rlist)):
+    wr_str = "\n"
     polt.R = rlist[r]
+    wr_str = wr_str + str(polt.R) + " "
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
-    polt.Transform_P_to_L()
-    Local_En[r] = polt.TrHD(polt.H_total, polt.D_local)
-    #Pol_En[r] = polt.TrHD(polt.H_polariton, polt.D_polariton)
     
     for i in range(0,polt.N_basis_states):
         PES[r,i] = polt.polariton_energies[i]
+        wr_str = wr_str + str(polt.polariton_energies[i]) + " "
+    pes_file.write(wr_str)
 
-'''
-plt.plot(rlist, Local_En, 'green')
-plt.plot(rlist, PES[:,polt.initial_state], 'b--')
-plt.show()
-'''
+### Close PES file
+pes_file.close()
+
+### Go back to r_init
 polt.R = ri_init
 
-
-
-
-
-start = time.time()
-### We won't track dynamic quantities for the trial so just comment this out for now!
-#sim_time[0] = 0
-#r_of_t[0] = polt.R
 polt.H_e()
 polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
 polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
-#e_of_t[0] = polt.Energy
+polt.Transform_L_to_P()
 
-anidx = 1
+### open files for writing data about electronic and nuclear dynamics
+electronic_file = open(ed_fn, "w")
+nuclear_file = open(nuc_traj_fn, "w")
+### Write initial electronic and nuclear configurations
+e_str = "\n"
+n_str = "\n"
+### both strings need the time
+e_str = e_str + str(0*polt.dt) + " "
+n_str = n_str + str(0*polt.dt) + " "
+n_str = n_str + str(polt.R) + " " + str(polt.Energy)
+for j in range(0,polt.N_basis_states):
+    e_str = e_str + str(np.real(polt.D_local[j,j])) + " "
+for j in range(0,polt.N_basis_states):
+    e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
 
-for i in range(0,N_time):
+electronic_file.write(e_str)
+nuclear_file.write(n_str)
+
+### start timing
+start = time.time()
+### start dynamics
+for i in range(1,N_time):
     #### Update nuclear coordinate first
     polt.FSSH_Update()
     
     ### store dynamics data every 200 updates
-    #if i%200==0:
-    #    sim_time[anidx] = i*polt.dt
-    #    r_of_t[anidx] = polt.R
-    #    e_of_t[anidx] = polt.Energy
-    #    anidx = anidx + 1
+    if i%200==0:
+        e_str = "\n"
+        n_str = "\n"
+        ### both strings need the time
+        e_str = e_str + str(i*polt.dt) + " "
+        n_str = n_str + str(i*polt.dt) + " " + str(polt.R) + " " + str(polt.Energy) + " "
+        nuclear_file.write(n_str)
+        
+        ### nuc string needs R and E
+        
+        for j in range(0,polt.N_basis_states):
+            e_str = e_str + str(np.real(polt.D_local[j,j])) + " "
+        for j in range(0,polt.N_basis_states):
+            e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
+        
+        electronic_file.write(e_str)
         
     if i>N_thresh:
         r_array.append(polt.R)
@@ -126,6 +157,9 @@ for i in range(0,N_time):
 end = time.time()
 
 time_taken = end-start
+
+electronic_file.close()
+nuclear_file.close()
         
 avg_r = sum(r_array) / len(r_array)
 
