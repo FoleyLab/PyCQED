@@ -8,8 +8,8 @@ Created on Sat Jan 18 12:26:29 2020
 
 from polaritonic import polaritonic
 import numpy as np
-from matplotlib import pyplot as plt
-import matplotlib.animation as animation
+#from matplotlib import pyplot as plt
+#import matplotlib.animation as animation
 import time
 import sys
 
@@ -41,9 +41,12 @@ nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 pes_fn = "Data/" + prefix + '_pes.txt'
 ### filename to write electronic/polaritonic dynamics to
 ed_fn = "Data/" + prefix + '_electronic.txt'
+### filename to write photonic contributions of each state to
+pc_fn = "Data/" + prefix + '_photon_contribution.txt'
+
 
 ### Number of updates!
-N_time = 4000000
+N_time = 1
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -79,26 +82,48 @@ polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], n
 
 polt.Transform_L_to_P()
 
-rlist = np.linspace(-1.5, 1.5, 200)
+rlist = np.linspace(-1.5, 1.5, 50)
 PES = np.zeros((len(rlist),polt.N_basis_states))
 
 ### Get PES of polaritonic system and write to file pes_fn
 pes_file = open(pes_fn, "w")
+pc_file = open(pc_fn, "w")
 for r in range(0,len(rlist)):
     wr_str = "\n"
+    pc_str = "\n"
     polt.R = rlist[r]
     wr_str = wr_str + str(polt.R) + " "
+    pc_str = pc_str + str(polt.R) + " "
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
+    #print("TV")
+    #print(polt.transformation_vecs_L_to_P)
     
+    ### get energies and photonic contributions to a given surface
+    pc = 0
     for i in range(0,polt.N_basis_states):
         PES[r,i] = polt.polariton_energies[i]
         wr_str = wr_str + str(polt.polariton_energies[i]) + " "
+        
+        ### loop over all photon indices in basis states
+        
+        for j in range(1,polt.NPhoton+1):
+            #print(polt.R,i,j,polt.local_basis[i,j])
+            if polt.local_basis[i,j]==1:
+                #print("now",polt.R,i,j,polt.local_basis[i,j], polt.transformation_vecs_L_to_P[j,i])
+                pc = pc + np.real( polt.transformation_vecs_L_to_P[j,i] * np.conj(polt.transformation_vecs_L_to_P[j,i])   )
+                #print("nn",pc)
+            pc_str = pc_str + str(pc) + " "
+            
+            
     pes_file.write(wr_str)
+    pc_file.write(pc_str)
 
 ### Close PES file
 pes_file.close()
+pc_file.close()
+
 
 ### Go back to r_init
 polt.R = ri_init
