@@ -14,27 +14,32 @@ import time
 import sys
 
 ### initial position
-ri_init = float(sys.argv[1])
+#ri_init = float(sys.argv[1])
+ri_init = -0.66156
 ### initial velocity
-vi_init = float(sys.argv[2])
+##vi_init = float(sys.argv[2])
+vi_init = 3.3375e-5
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[3]) 
+#gamp = float(sys.argv[3]) 
+gamp = 0.1
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = float(sys.argv[4])
+#omp = float(sys.argv[4])
+omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[5])
+#gp = float(sys.argv[5])
+gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[6]
-
+#prefix = sys.argv[6]
+prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 ### filename to wrote PES to
@@ -97,22 +102,23 @@ for r in range(0,len(rlist)):
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
+    polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state]))
     #print("TV")
     #print(polt.transformation_vecs_L_to_P)
     
     ### get energies and photonic contributions to a given surface
-    pc = 0
+    
     for i in range(0,polt.N_basis_states):
         PES[r,i] = polt.polariton_energies[i]
         wr_str = wr_str + str(polt.polariton_energies[i]) + " "
         
         ### loop over all photon indices in basis states
-        
+        pc = 0
         for j in range(1,polt.NPhoton+1):
             #print(polt.R,i,j,polt.local_basis[i,j])
             if polt.local_basis[i,j]==1:
                 #print("now",polt.R,i,j,polt.local_basis[i,j], polt.transformation_vecs_L_to_P[j,i])
-                pc = pc + np.real( polt.transformation_vecs_L_to_P[j,i] * np.conj(polt.transformation_vecs_L_to_P[j,i])   )
+                pc = pc + polt.D_local[i,i]
                 #print("nn",pc)
             pc_str = pc_str + str(pc) + " "
             
