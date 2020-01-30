@@ -1,2 +1,5 @@
+.DS_Store
+Data/*
 .ipynb_checkpoints/*
 temp*
+Papers/.DS_Store
