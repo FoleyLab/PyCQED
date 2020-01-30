@@ -387,9 +387,8 @@ class polaritonic:
     
     def Transform_P_to_L(self):
         ### now do transformation for density matrix from local to polariton basis
-        self.D_local = np.outer(self.transformation_vecs_L_to_P[:,self.initial_state], 
-                                np.conj(self.transformation_vecs_L_to_P[:,self.initial_state])) 
-
+        dt0 = np.dot(self.transformation_vecs_L_to_P, self.D_polariton)
+        self.D_local = np.dot(dt0, LA.inv(self.transformation_vecs_L_to_P))
         ### return Hpl and Dpl
         return 1
   
