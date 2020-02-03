@@ -14,32 +14,32 @@ import time
 import sys
 
 ### initial position
-#ri_init = float(sys.argv[1])
-ri_init = -0.66156
+ri_init = float(sys.argv[1])
+#ri_init = -0.66156
 ### initial velocity
-##vi_init = float(sys.argv[2])
-vi_init = 3.3375e-5
+vi_init = float(sys.argv[2])
+#vi_init = 3.3375e-5
 ### photonic mode dissipation rate in meV, gamma
-#gamp = float(sys.argv[3]) 
-gamp = 0.1
+gamp = float(sys.argv[3]) 
+#gamp = 0.1
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-#omp = float(sys.argv[4])
-omp = 2.45
+omp = float(sys.argv[4])
+#omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-#gp = float(sys.argv[5])
-gp = 0.02
+gp = float(sys.argv[5])
+#gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-#prefix = sys.argv[6]
-prefix = "test"
+prefix = sys.argv[6]
+#prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 ### filename to wrote PES to
@@ -51,7 +51,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
 
 ### Number of updates!
-N_time = 2
+N_time = 4000000
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -161,7 +161,7 @@ for i in range(1,N_time):
     polt.FSSH_Update()
     
     ### store dynamics data every 200 updates
-    if i%200==0:
+    if i%500==0:
         e_str = "\n"
         n_str = "\n"
         ### both strings need the time
