@@ -61,6 +61,8 @@ class polaritonic:
         
         ### derivative coupling
         self.dc = np.zeros((self.N_basis_states,self.N_basis_states))
+        ### differences between polaritonic surface values
+        self.Delta_V_jk = np.zeros((self.N_basis_states,self.N_basis_states))
         
         self.Transform_L_to_P()
         
@@ -465,7 +467,11 @@ class polaritonic:
         return np.real(som)
     
 
-    def FSSH_Update(self): 
+    def FSSH_Update(self):
+        ### use this to check if a switch occurs this iteration!
+        switch=0
+        dc_sign = 1
+        starting_act_idx = self.active_index
         ### allocate a few arrays we will need
         pop_fut = np.zeros(self.N_basis_states)
         pop_dot = np.zeros(self.N_basis_states)
@@ -546,11 +552,21 @@ class polaritonic:
             for i in range(self.active_index-1,0,-1):
                 if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
                     #print("hopping from state",self.active_index,"to ",i)
+                    if self.dc[self.active_index,i]<0:
+                        sign = -1
+                    else:
+                        sign = 1
                     self.active_index = i
+                    switch=1
         if (self.active_index==1):
             if (gik[0]>=thresh[0]):
                 #print("hopping from state",self.active_index,"to ",0)
+                if self.dc[self.active_index,0]<0:
+                    sign = -1
+                else:
+                    sign = 1
                 self.active_index = 0
+                switch=1
     
         
             
@@ -607,13 +623,43 @@ class polaritonic:
         ### vv update
         ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
         ### bbk update
+        ### updated velocity assuming we are on the same surface
         self.V = (v_halftime + a_fut * self.dt/2) * (1/(1 + self.gamma_nuc * self.dt/2))
+        if self.V>0:
+            forward=1
+        else:
+            forward=-1
+        ### if we switched surfaces, we need to change!
+        if switch:
+            ### momentum on surface j (starting surface)
+            Pj = self.V*M
+            ### This number should always be positive!
+            delta_V = self.Delta_V_jk[starting_act_idx,self.active_index]
+            
+            ### speed on surface k (new surface)
+            Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
+            Vk = forward * Vk_mag
+            
+            Pk = self.M * Vk
+            
+            Delta_P = Pj - Pk
+            
+            ### This new velocity makes sense as long as 
+            ### Pj = Pk + deltaP * dc_sign
+            ### where dc_sign is the sign of the derivative coupling vector
+            ### between state j and k
+            if np.isclose(Pj,(Pk + dc_sign*Delta_P)):
+                self.V = Vk
+            else:
+                self.active_index = starting_act_idx
+                
+                
+        
         return 1
 
     
     def Derivative_Coupling(self, H_prime):
         ### Compute derivative coupling in local basis
-        
         for i in range(0, self.N_basis_states):
             D_ii = np.outer(self.transformation_vecs_L_to_P[:,i], 
                          np.conj(self.transformation_vecs_L_to_P[:,i]))
@@ -631,6 +677,8 @@ class polaritonic:
                     cup = self.TrHD(H_prime, D_ij)
                     self.dc[i,j] = cup/(Vjj-Vii)
                     self.dc[j,i] = cup/(Vii-Vjj)
+                    self.Delta_V_jk[i,j] = Vii-Vjj
+                    self.Delta_V_jk[j,i] = Vjj-Vii
                     
         return 1
 

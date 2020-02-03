@@ -51,7 +51,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
 
 ### Number of updates!
-N_time = 1
+N_time = 2
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -87,7 +87,7 @@ polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], n
 
 polt.Transform_L_to_P()
 
-rlist = np.linspace(-1.5, 1.5, 50)
+rlist = np.linspace(-1.5, 1.5, 500)
 PES = np.zeros((len(rlist),polt.N_basis_states))
 
 ### Get PES of polaritonic system and write to file pes_fn
@@ -102,25 +102,21 @@ for r in range(0,len(rlist)):
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
-    polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state]))
-    #print("TV")
-    #print(polt.transformation_vecs_L_to_P)
-    
-    ### get energies and photonic contributions to a given surface
+    v = polt.transformation_vecs_L_to_P
     
     for i in range(0,polt.N_basis_states):
         PES[r,i] = polt.polariton_energies[i]
+        v_i = v[:,i]
+        cv_i = np.conj(v_i)
+        
         wr_str = wr_str + str(polt.polariton_energies[i]) + " "
         
         ### loop over all photon indices in basis states
         pc = 0
-        for j in range(1,polt.NPhoton+1):
-            #print(polt.R,i,j,polt.local_basis[i,j])
-            if polt.local_basis[i,j]==1:
-                #print("now",polt.R,i,j,polt.local_basis[i,j], polt.transformation_vecs_L_to_P[j,i])
-                pc = pc + polt.D_local[i,i]
-                #print("nn",pc)
-            pc_str = pc_str + str(pc) + " "
+        for j in range(0,polt.N_basis_states):
+            if polt.gamma_diss[j]>0:
+                pc = pc + cv_i[j] * v_i[j]
+        pc_str = pc_str + str(pc) + " "
             
             
     pes_file.write(wr_str)
