@@ -632,7 +632,7 @@ class polaritonic:
         ### if we switched surfaces, we need to change!
         if switch:
             ### momentum on surface j (starting surface)
-            Pj = self.V*M
+            Pj = self.V*self.M
             ### This number should always be positive!
             delta_V = self.Delta_V_jk[starting_act_idx,self.active_index]
             

@@ -1,2 +1,4 @@
+.DS_Store
+Data/*.txt
 .ipynb_checkpoints/*
 temp*

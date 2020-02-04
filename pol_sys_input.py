@@ -69,7 +69,7 @@ options = {
         ### temperature in a.u.
         'Temperature': 0.00095,
         ### friction in a.u.
-        'Friction': 0.000011,
+        'Friction': 0.00002,
         ### specify initial state as a human would, not a computer...
         ### i.e. 1 is the ground state... it will be shifted down by -1 so
         ### that it makes sense to the python index convention
@@ -94,8 +94,8 @@ PES = np.zeros((len(rlist),polt.N_basis_states))
 pes_file = open(pes_fn, "w")
 pc_file = open(pc_fn, "w")
 for r in range(0,len(rlist)):
-    wr_str = "\n"
-    pc_str = "\n"
+    wr_str = " "
+    pc_str = " "
     polt.R = rlist[r]
     wr_str = wr_str + str(polt.R) + " "
     pc_str = pc_str + str(polt.R) + " "
@@ -103,7 +103,6 @@ for r in range(0,len(rlist)):
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
     v = polt.transformation_vecs_L_to_P
-    
     for i in range(0,polt.N_basis_states):
         PES[r,i] = polt.polariton_energies[i]
         v_i = v[:,i]
@@ -118,7 +117,8 @@ for r in range(0,len(rlist)):
                 pc = pc + cv_i[j] * v_i[j]
         pc_str = pc_str + str(pc) + " "
             
-            
+    wr_str = wr_str + "\n"
+    pc_str = pc_str + "\n"        
     pes_file.write(wr_str)
     pc_file.write(pc_str)
 
@@ -138,9 +138,9 @@ polt.Transform_L_to_P()
 ### open files for writing data about electronic and nuclear dynamics
 electronic_file = open(ed_fn, "w")
 nuclear_file = open(nuc_traj_fn, "w")
+e_str = " "
+n_str = " "
 ### Write initial electronic and nuclear configurations
-e_str = "\n"
-n_str = "\n"
 ### both strings need the time
 e_str = e_str + str(0*polt.dt) + " "
 n_str = n_str + str(0*polt.dt) + " "
@@ -150,6 +150,8 @@ for j in range(0,polt.N_basis_states):
 for j in range(0,polt.N_basis_states):
     e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
 
+e_str = e_str + "\n"
+n_str = n_str + "\n"
 electronic_file.write(e_str)
 nuclear_file.write(n_str)
 
@@ -162,11 +164,12 @@ for i in range(1,N_time):
     
     ### store dynamics data every 200 updates
     if i%500==0:
-        e_str = "\n"
-        n_str = "\n"
+        e_str = " "
+        n_str = " "
         ### both strings need the time
         e_str = e_str + str(i*polt.dt) + " "
         n_str = n_str + str(i*polt.dt) + " " + str(polt.R) + " " + str(polt.Energy) + " "
+        n_str = n_str + "\n"
         nuclear_file.write(n_str)
         
         ### nuc string needs R and E
@@ -175,7 +178,7 @@ for i in range(1,N_time):
             e_str = e_str + str(np.real(polt.D_local[j,j])) + " "
         for j in range(0,polt.N_basis_states):
             e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
-        
+        e_str = e_str + "\n"
         electronic_file.write(e_str)
         
     if i>N_thresh:

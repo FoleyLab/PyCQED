@@ -1,34 +1,33 @@
 #!/usr/bin/bash
-#-0.6615679318398704 3.33752906715916e-05 0.11 2.45 0.02
-python SH_LE_SysInput.py -0.6615679318398704 3.33752906715916e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.698020918719673 -1.7604569932905628e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7325842045116059 7.215162825258178e-07 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7304937149739744 -3.308478778918541e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6940536701380835 3.0711164130420224e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6836965102136909 -2.104531948592309e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6998506709530399 -1.4907596794662185e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7449253281970559 1.2388055205752432e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6904318143316741 5.501228084142224e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6939445601745601 -3.3319508968582436e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6632215738778561 4.577416117998228e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6728797113370457 -8.41711207762262e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6934910004320777 2.3585522748101766e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6792279694681573 2.958233558830089e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7322898836286028 1.0251785908131351e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6977068331532233 1.6589663882738605e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6935488453937674 2.5056824611592777e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7015382635373324 4.6504740639506685e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6801072031988746 -2.5026872095148172e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7119832457685649 -1.1513780670842717e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6409097506042635 -2.138263816194422e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6805414774275297 1.4261882343640822e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7083796573332127 -3.570994977598272e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6712145721690275 -9.376212854407648e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6785802781002883 -3.0055348527723005e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7130669087205469 2.893987704450186e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6573070224037851 -2.9990732185671934e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7397633551827134 -1.0192438146754057e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6782734424497334 3.6958201786137783e-06 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6909436630165371 -2.2769190449161004e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.6824934900946077 2.5716916384414968e-05 0.11 2.45 0.02 >> test1.txt &
-python SH_LE_SysInput.py -0.7129979771566421 -3.30078483192915e-05 0.11 2.45 0.02 >> test1.txt &
+#python pol_sys_input.py -0.6615679318398704 3.33752906715916e-05 0.1 2.45 0.1 test1 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.698020918719673 -1.7604569932905628e-05 0.1 2.45 0.1 test2 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7325842045116059 7.215162825258178e-07 0.1 2.45 0.1 test3 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7304937149739744 -3.308478778918541e-05 0.1 2.45 0.1 test4 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6940536701380835 3.0711164130420224e-06 0.1 2.45 0.1 test5 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6836965102136909 -2.104531948592309e-05 0.1 2.45 0.1 test6 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6998506709530399 -1.4907596794662185e-06 0.1 2.45 0.1 test7 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7449253281970559 1.2388055205752432e-05 0.1 2.45 0.1 test8 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6904318143316741 5.501228084142224e-05 0.1 2.45 0.1 test9 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6939445601745601 -3.3319508968582436e-06 0.1 2.45 0.1 test10 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6632215738778561 4.577416117998228e-06 0.1 2.45 0.1 test11 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6728797113370457 -8.41711207762262e-06 0.1 2.45 0.1 test12 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6934910004320777 2.3585522748101766e-05 0.1 2.45 0.1 test13 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6792279694681573 2.958233558830089e-06 0.1 2.45 0.1 test14 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7322898836286028 1.0251785908131351e-05 0.1 2.45 0.1 test15 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6977068331532233 1.6589663882738605e-05 0.1 2.45 0.1 test16 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6935488453937674 2.5056824611592777e-05 0.1 2.45 0.1 test17 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7015382635373324 4.6504740639506685e-06 0.1 2.45 0.1 test18 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6801072031988746 -2.5026872095148172e-05 0.1 2.45 0.1 test19 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7119832457685649 -1.1513780670842717e-05 0.1 2.45 0.1 test20 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6409097506042635 -2.138263816194422e-06 0.1 2.45 0.1 test21 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6805414774275297 1.4261882343640822e-05 0.1 2.45 0.1 test22 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7083796573332127 -3.570994977598272e-05 0.1 2.45 0.1 test23 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6712145721690275 -9.376212854407648e-06 0.1 2.45 0.1 test24 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6785802781002883 -3.0055348527723005e-05 0.1 2.45 0.1 test25 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7130669087205469 2.893987704450186e-05 0.1 2.45 0.1 test26 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6573070224037851 -2.9990732185671934e-05 0.1 2.45 0.1 test27 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7397633551827134 -1.0192438146754057e-06 0.1 2.45 0.1 test28 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6782734424497334 3.6958201786137783e-06 0.1 2.45 0.1 test29 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6909436630165371 -2.2769190449161004e-05 0.1 2.45 0.1 test30 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6824934900946077 2.5716916384414968e-05 0.1 2.45 0.1 test31 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.7129979771566421 -3.30078483192915e-05 0.1 2.45 0.1 test32 >> test_omc_2.45_hgc_0.1.txt &
