@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-#python pol_sys_input.py -0.6615679318398704 3.33752906715916e-05 0.1 2.45 0.1 test1 >> test_omc_2.45_hgc_0.1.txt &
+python pol_sys_input.py -0.6615679318398704 3.33752906715916e-05 0.1 2.45 0.1 test1 >> test_omc_2.45_hgc_0.1.txt &
 python pol_sys_input.py -0.698020918719673 -1.7604569932905628e-05 0.1 2.45 0.1 test2 >> test_omc_2.45_hgc_0.1.txt &
 python pol_sys_input.py -0.7325842045116059 7.215162825258178e-07 0.1 2.45 0.1 test3 >> test_omc_2.45_hgc_0.1.txt &
 python pol_sys_input.py -0.7304937149739744 -3.308478778918541e-05 0.1 2.45 0.1 test4 >> test_omc_2.45_hgc_0.1.txt &
