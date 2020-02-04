@@ -11,9 +11,9 @@ import time
 
 ### go through and read nuclear dynamics trajectories from each data file
 
-r_of_t = np.zeros((15,20000))
-t_of_t = np.zeros(20000)
-e_of_t = np.zeros((15,20000))
+r_of_t = np.zeros((15,8000))
+t_of_t = np.zeros(8000)
+e_of_t = np.zeros((15,8000))
 for i in range(1,15):
     file_path = "Data/test" + str(i) + "_nuc_traj.txt"
     print(file_path)
@@ -26,8 +26,8 @@ for i in range(1,15):
 
 dt = 0.12
 
-rlist = np.zeros(200)
-PPES = np.zeros((200,4))
+rlist = np.zeros(500)
+PPES = np.zeros((500,4))
 file_path = "Data/test1" + "_pes.txt"
 b = np.loadtxt(file_path)
 
@@ -77,7 +77,7 @@ def animate(i):
 ### defines which values of the time counter will be used 
 ### (here the timestep dt is really small, so we only plot every 100 timesteps
 ### to make the animation reasonable
-ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 2),
+ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 1),
                              interval=dt, blit=True, init_func=init)
 plt.show()
 
