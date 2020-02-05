@@ -664,7 +664,7 @@ class polaritonic:
                 ### Re-scale Delta P with derivative coupling vector
                 scaled_Delta_P = Delta_P / self.dc[starting_act_idx, self.active_index]
                 ### now compute the re-scaled Pk
-                Pk_rescaled = Pj - sc
+                Pk_rescaled = Pj - scaled_Delta_P
                 ### assign the corresponding re-scaled velocity to self.V
                 self.V = Pk_rescaled / self.M
                 print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
