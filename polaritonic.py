@@ -470,7 +470,7 @@ class polaritonic:
     def FSSH_Update(self):
         ### use this to check if a switch occurs this iteration!
         switch=0
-        dc_sign = 1
+        sign = 1
         starting_act_idx = self.active_index
         ### allocate a few arrays we will need
         pop_fut = np.zeros(self.N_basis_states)
@@ -643,12 +643,12 @@ class polaritonic:
             Pk = self.M * Vk
             
             Delta_P = Pj - Pk
-            
+            print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
             ### This new velocity makes sense as long as 
             ### Pj = Pk + deltaP * dc_sign
             ### where dc_sign is the sign of the derivative coupling vector
             ### between state j and k
-            if np.isclose(Pj,(Pk + dc_sign*Delta_P)):
+            if np.isclose(Pj,(Pk + sign*Delta_P)):
                 self.V = Vk
             else:
                 self.active_index = starting_act_idx
