@@ -69,7 +69,7 @@ options = {
         ### temperature in a.u.
         'Temperature': 0.00095,
         ### friction in a.u.
-        'Friction': 0.00006,
+        'Friction': 0.000011,
         ### specify initial state as a human would, not a computer...
         ### i.e. 1 is the ground state... it will be shifted down by -1 so
         ### that it makes sense to the python index convention
