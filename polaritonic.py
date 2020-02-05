@@ -641,17 +641,34 @@ class polaritonic:
             Vk = forward * Vk_mag
             
             Pk = self.M * Vk
-            
-            Delta_P = Pj - Pk
+            ### First estimate of Delta P
+            Delta_P = Pk - Pj
+        
             print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
-            ### This new velocity makes sense as long as 
-            ### Pj = Pk + deltaP * dc_sign
-            ### where dc_sign is the sign of the derivative coupling vector
-            ### between state j and k
-            if np.isclose(Pj,(Pk + sign*Delta_P)):
-                self.V = Vk
-            else:
+            ### We will re-scale the updated momentum so that the following is true: 
+            ### Pj = Pk + deltaP * dc
+            ### if dc vanishes (as will happen for j->0), do not rescale the velocity
+            ### why?  bc these transitions are due to the photon leaving the cavity, 
+            ### and the photon should carry energy away with it so we don't want to conserve energy!
+            if np.isclose(self.dc[starting_act_idx, self.active_index],0):
+                self.V = Pj/self.M
+            elif self.active_index==0:
+                self.V = Pj/self.M
+            ### if derivative coupling is positive, then this hop cannot happen!
+            elif self.dc[starting_act_idx, self.active_index]>0:
                 self.active_index = starting_act_idx
+                self.V = Pj/self.M
+            ### hops with negative derivative coupling are allowed, rescale the velocity
+            ### appropriately.
+            else:
+                ### Re-scale Delta P with derivative coupling vector
+                scaled_Delta_P = Delta_P / self.dc[starting_act_idx, self.active_index]
+                ### now compute the re-scaled Pk
+                Pk_rescaled = Pj - sc
+                ### assign the corresponding re-scaled velocity to self.V
+                self.V = Pk_rescaled / self.M
+                print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
+                
                 
                 
         
