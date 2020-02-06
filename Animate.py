@@ -12,18 +12,20 @@ import numpy as np
 from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
+from matplotlib import animation
 #from scipy import interpolate
 #from scipy.interpolate import InterpolatedUnivariateSpline
-import matplotlib.animation as animation
+#import matplotlib.animation as animation
+
 import time
 
 ### go through and read nuclear dynamics trajectories from each data file
 
-r_of_t = np.zeros((15,8000))
+r_of_t = np.zeros((32,8000))
 t_of_t = np.zeros(8000)
-e_of_t = np.zeros((15,8000))
-for i in range(1,15):
-    file_path = "Data/test" + str(i) + "_nuc_traj.txt"
+e_of_t = np.zeros((32,8000))
+for i in range(1,33):
+    file_path = "Data/wtest" + str(i) + "_nuc_traj.txt"
     print(file_path)
     a = np.loadtxt(file_path)
     #print(len(a[:,0]))
@@ -36,7 +38,7 @@ dt = 0.12
 
 rlist = np.zeros(500)
 PPES = np.zeros((500,4))
-file_path = "Data/test1" + "_pes.txt"
+file_path = "Data/wtest1" + "_pes.txt"
 b = np.loadtxt(file_path)
 
 rlist[:] = b[:,0]
@@ -47,7 +49,7 @@ PPES[:,3] = b[:,4]
 
 
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-3, 3), ylim=(0, 10))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 6.5))
 ax.grid()
 
 ### these are the different curves/points that will be plotted
@@ -87,17 +89,7 @@ def animate(i):
 ### to make the animation reasonable
 ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 1),
                              interval=dt, blit=True, init_func=init)
-plt.show()
 
-© 2020 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
+#ani.save('test.html')
+#ani.save('test.mp4', fps=15, extra_args=['-vcodec', 'libx264'])
+plt.show()
