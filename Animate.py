@@ -25,7 +25,7 @@ r_of_t = np.zeros((32,8000))
 t_of_t = np.zeros(8000)
 e_of_t = np.zeros((32,8000))
 for i in range(1,33):
-    file_path = "Data/wtest" + str(i) + "_nuc_traj.txt"
+    file_path = "Data/gam_5.0_test" + str(i) + "_nuc_traj.txt"
     print(file_path)
     a = np.loadtxt(file_path)
     #print(len(a[:,0]))
@@ -38,7 +38,7 @@ dt = 0.12
 
 rlist = np.zeros(500)
 PPES = np.zeros((500,4))
-file_path = "Data/wtest1" + "_pes.txt"
+file_path = "Data/gam_1.0_test1" + "_pes.txt"
 b = np.loadtxt(file_path)
 
 rlist[:] = b[:,0]
@@ -91,5 +91,6 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 1),
                              interval=dt, blit=True, init_func=init)
 
 #ani.save('test.html')
+#ani.save('traj_gam_5p0.gif', writer='imagemagick')
 #ani.save('test.mp4', fps=15, extra_args=['-vcodec', 'libx264'])
 plt.show()
