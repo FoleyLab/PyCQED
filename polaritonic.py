@@ -532,7 +532,12 @@ class polaritonic:
         ### get change in populations in local basis to get hoppin
         for i in range(0,self.active_index+1):
             pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
-            g = np.real( pop_dot[i] / self.population_polariton[self.active_index] * self.dt)
+            ### don't divide by zero!!!
+            if self.population_polariton[self.active_index]>0:
+                g = np.real( pop_dot[i] / self.population_polariton[self.active_index] * self.dt)
+            ### divide by something realllllly small instead!
+            else:
+                g = np.real( pop_dot[i] / 1e-13 * self.dt)
             if (g<0):
                 g = 0
             
@@ -644,7 +649,7 @@ class polaritonic:
             ### First estimate of Delta P
             Delta_P = Pk - Pj
         
-            print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
+            #print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
             ### We will re-scale the updated momentum so that the following is true: 
             ### Pj = Pk + deltaP * dc
             ### if dc vanishes (as will happen for j->0), do not rescale the velocity
@@ -667,7 +672,7 @@ class polaritonic:
                 Pk_rescaled = Pj - scaled_Delta_P
                 ### assign the corresponding re-scaled velocity to self.V
                 self.V = Pk_rescaled / self.M
-                print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
+                #print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
                 
                 
                 
@@ -698,7 +703,105 @@ class polaritonic:
                     self.Delta_V_jk[j,i] = Vjj-Vii
                     
         return 1
+    
+    ''' Function to initialize position and velocity for a nuclear trajectory; will use
+        hard-coded values of the Mass and Force Constant for the time  being but should be
+        generalized!  '''
+    def Initialize_Phase_Space(self):
+        
+        from random import seed
+        from random import gauss
+        import time
+        k = 0.31246871517560126
+        M = self.M
+        ### alpha from Harmonic Oscillator eigenfunction
+        a = np.sqrt(k*M)
+        ### normalization from Harmonic oscillator eigenfunction
+        N = (a/np.pi)**(1/4.)
+        ### definition of sigma from Gaussian function, which 
+        ### is equivalent to position uncertainty
+        sig = np.sqrt(1/(2*a))
+        ### momentum uncertainty for Harmonic Oscillator ground-state
+        p_unc = np.sqrt(a - a**2 * np.sqrt(np.pi)/(2*a**(3/2)))
+        ### velocity uncertainty for the same
+        v_unc = p_unc / M
+        
+        ### seed random number generator
+        seed(time.time())
+        ### Get random value of R
+        self.R = gauss(-0.7, sig)
+        ### Get random value of V
+        self.V = gauss(0, v_unc)
+        
+        return 1
+    
+    def Write_PES(self, pes_fn, pc_fn):
+        
+        rlist = np.linspace(-1.5, 1.5, 500)
+        PES = np.zeros((len(rlist),self.N_basis_states))
+        
+        ### Get PES of polaritonic system and write to file pes_fn
+        pes_file = open(pes_fn, "w")
+        pc_file = open(pc_fn, "w")
+        
+        for r in range(0,len(rlist)):
+            wr_str = " "
+            pc_str = " "
+            self.R = rlist[r]
+            wr_str = wr_str + str(self.R) + " "
+            pc_str = pc_str + str(self.R) + " "
+            self.H_e()
+            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            self.Transform_L_to_P()
+            v = self.transformation_vecs_L_to_P
+            
+            for i in range(0,self.N_basis_states):
+                PES[r,i] = self.polariton_energies[i]
+                v_i = v[:,i]
+                cv_i = np.conj(v_i)
+                
+                wr_str = wr_str + str(self.polariton_energies[i]) + " "
+                
+                ### loop over all photon indices in basis states
+                pc = 0
+                for j in range(0,self.N_basis_states):
+                    if self.gamma_diss[j]>0:
+                        pc = pc + cv_i[j] * v_i[j]
+                        
+                pc_str = pc_str + str(pc) + " "
+        
+            wr_str = wr_str + "\n"
+            pc_str = pc_str + "\n"        
+            pes_file.write(wr_str)
+            pc_file.write(pc_str)
+        
+        ### Close PES file
+        pes_file.close()
+        pc_file.close()
+        
+        return 1
+    
+    def Write_Trajectory(self, step, nuclear_file, electronic_file):
+        
 
+        e_str = " "
+        n_str = " "
+        e_str = e_str + str(step*self.dt) + " "
+        n_str = n_str + str(step*self.dt) + " "
+        n_str = n_str + str(self.R) + " " + str(self.Energy)
+        
+        for j in range(0,self.N_basis_states):
+            e_str = e_str + str(np.real(self.D_local[j,j])) + " "
+            
+        for j in range(0,self.N_basis_states):
+            e_str = e_str + str(np.real(self.D_polariton[j,j])) + " "
+            
+        e_str = e_str + "\n"
+        n_str = n_str + "\n"
+        electronic_file.write(e_str)
+        nuclear_file.write(n_str)
+        
+        return 1
 '''
 
     

@@ -13,32 +13,29 @@ import numpy as np
 import time
 import sys
 
-### initial position
-ri_init = float(sys.argv[1])
-#ri_init = -0.66156
-### initial velocity
-vi_init = float(sys.argv[2])
-#vi_init = 3.3375e-5
+### dummi initial position and velocity values
+ri_init = -0.66156
+vi_init = 3.3375e-5
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[3]) 
+gamp = float(sys.argv[1]) 
 #gamp = 0.1
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = float(sys.argv[4])
+omp = float(sys.argv[2])
 #omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[5])
+gp = float(sys.argv[3])
 #gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[6]
+prefix = sys.argv[4]
 #prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
@@ -52,11 +49,12 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
 ### Number of updates!
 N_time = 4000000
+N_repeats = 5
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
 
-r_array = []
+
 
 options = {
         'Number_of_Photons': 1,
@@ -80,125 +78,75 @@ options = {
 ### instantiate
 polt = polaritonic(options)
 
-polt.Transform_L_to_P()
-polt.D_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=complex)
-polt.D_polariton[polt.initial_state,polt.initial_state] = 1+0j
-polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
+### Write potential energy surface!
+polt.Write_PES(pes_fn, pc_fn)
 
-polt.Transform_L_to_P()
-
-rlist = np.linspace(-1.5, 1.5, 500)
-PES = np.zeros((len(rlist),polt.N_basis_states))
-
-### Get PES of polaritonic system and write to file pes_fn
-pes_file = open(pes_fn, "w")
-pc_file = open(pc_fn, "w")
-for r in range(0,len(rlist)):
-    wr_str = " "
-    pc_str = " "
-    polt.R = rlist[r]
-    wr_str = wr_str + str(polt.R) + " "
-    pc_str = pc_str + str(polt.R) + " "
+### Return to a randomly-chosen initial position and velocity!
+### Repeat N_repeats number of times
+for j in range(0,N_repeats):
+    polt.Initialize_Phase_Space()
+    
+    ri_init = polt.R
+    vi_init = polt.V
+    
+    ### uncomment if you wish to print the initial conditions
+    #print("  Initial Position is ",polt.R)
+    #print("  Initial Velocity is ",polt.V)
+    
+    ### Build local and polariton matrices!
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
-    v = polt.transformation_vecs_L_to_P
-    for i in range(0,polt.N_basis_states):
-        PES[r,i] = polt.polariton_energies[i]
-        v_i = v[:,i]
-        cv_i = np.conj(v_i)
+    polt.D_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=complex)
+    polt.D_polariton[polt.initial_state,polt.initial_state] = 1+0j
+    polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
+    polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
+    polt.Transform_L_to_P()
+    
+    ### un-comment open files for writing data about electronic and nuclear dynamics
+    '''
+    electronic_file = open(ed_fn, "w")
+    nuclear_file = open(nuc_traj_fn, "w")
+    polt.Write_Trajectory(0, nuclear_file, electronic_file)
+    '''
+    
+    ### start timing
+    start = time.time()
+    
+    ### start dynamics
+    r_array = []
+    
+    for i in range(1,N_time):
         
-        wr_str = wr_str + str(polt.polariton_energies[i]) + " "
+        #### Call FSSH update to update nuclear and electronic coordinates
+        polt.FSSH_Update()
         
-        ### loop over all photon indices in basis states
-        pc = 0
-        for j in range(0,polt.N_basis_states):
-            if polt.gamma_diss[j]>0:
-                pc = pc + cv_i[j] * v_i[j]
-        pc_str = pc_str + str(pc) + " "
+        ### Uncomment if you wish to write trajectory data!
+        '''
+        if i%500==0:
             
-    wr_str = wr_str + "\n"
-    pc_str = pc_str + "\n"        
-    pes_file.write(wr_str)
-    pc_file.write(pc_str)
-
-### Close PES file
-pes_file.close()
-pc_file.close()
-
-
-### Go back to r_init
-polt.R = ri_init
-
-polt.H_e()
-polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
-polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
-polt.Transform_L_to_P()
-
-### open files for writing data about electronic and nuclear dynamics
-electronic_file = open(ed_fn, "w")
-nuclear_file = open(nuc_traj_fn, "w")
-e_str = " "
-n_str = " "
-### Write initial electronic and nuclear configurations
-### both strings need the time
-e_str = e_str + str(0*polt.dt) + " "
-n_str = n_str + str(0*polt.dt) + " "
-n_str = n_str + str(polt.R) + " " + str(polt.Energy)
-for j in range(0,polt.N_basis_states):
-    e_str = e_str + str(np.real(polt.D_local[j,j])) + " "
-for j in range(0,polt.N_basis_states):
-    e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
-
-e_str = e_str + "\n"
-n_str = n_str + "\n"
-electronic_file.write(e_str)
-nuclear_file.write(n_str)
-
-### start timing
-start = time.time()
-### start dynamics
-for i in range(1,N_time):
-    #### Update nuclear coordinate first
-    polt.FSSH_Update()
+            polt.Write_Trajectory(i, nuclear_file, electronic_file)
+            
+        '''
+        ### After a while, start accumulating the position so you can average it!
+        if i>N_thresh:
+            r_array.append(polt.R)
+    end = time.time()
+    time_taken = end-start
     
-    ### store dynamics data every 200 updates
-    if i%500==0:
-        e_str = " "
-        n_str = " "
-        ### both strings need the time
-        e_str = e_str + str(i*polt.dt) + " "
-        n_str = n_str + str(i*polt.dt) + " " + str(polt.R) + " " + str(polt.Energy) + " "
-        n_str = n_str + "\n"
-        nuclear_file.write(n_str)
-        
-        ### nuc string needs R and E
-        
-        for j in range(0,polt.N_basis_states):
-            e_str = e_str + str(np.real(polt.D_local[j,j])) + " "
-        for j in range(0,polt.N_basis_states):
-            e_str = e_str + str(np.real(polt.D_polariton[j,j])) + " "
-        e_str = e_str + "\n"
-        electronic_file.write(e_str)
-        
-    if i>N_thresh:
-        r_array.append(polt.R)
-        
-end = time.time()
-
-time_taken = end-start
-
-electronic_file.close()
-nuclear_file.close()
-        
-avg_r = sum(r_array) / len(r_array)
-
-if avg_r>0:
-    iso_res = 1
-else:
-    iso_res = 0
-
-print(time_taken/60., ri_init, vi_init, gamp, omp, gp, avg_r, iso_res)
+    ### uncomment if you are writing trajectory data!
+    '''
+    electronic_file.close()
+    nuclear_file.close()
+    ''' 
     
-
+    avg_r = sum(r_array) / len(r_array)
+    
+    if avg_r>0:
+        iso_res = 1
+    else:
+        iso_res = 0
+        
+    print(time_taken/60., ri_init, vi_init, gamp, omp, gp, avg_r, iso_res)
+    
 
