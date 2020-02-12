@@ -90,8 +90,8 @@ for j in range(0,N_repeats):
     vi_init = polt.V
     
     ### uncomment if you wish to print the initial conditions
-    print("  Initial Position is ",polt.R)
-    print("  Initial Velocity is ",polt.V)
+    #print("  Initial Position is ",polt.R)
+    #print("  Initial Velocity is ",polt.V)
     
     ### Build local and polariton matrices!
     polt.H_e()
@@ -103,10 +103,10 @@ for j in range(0,N_repeats):
     polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
     polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
     polt.Transform_L_to_P()
-    print("Polariton")
-    print(D_polariton)
-    print("Local")
-    print(D_local)
+    #print("Polariton")
+    #print(polt.D_polariton)
+    #print("Local")
+    #print(polt.D_local)
     
     ### un-comment open files for writing data about electronic and nuclear dynamics
     '''
