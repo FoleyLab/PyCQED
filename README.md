@@ -9,7 +9,7 @@ Tools for simulating polaritonic chemical dynamics using the formalism of cavity
 
 In the above example, there are 5 arguments passed to the python script PFSSH.py.  
 
-- Argument 1 is an integer that specifies the number of independant trajectories to run; since the value is 1, only 1 trajectory will be run.
+- Argument 1 is an integer that specifies the number of independant trajectories to run; since the value is 1 in the above example, only 1 trajectory will be run.
 
 - Argument 2 is a float that specifies the dissipation rate of the photonic mode in mili electron volts; in the example the dissipation rate is 1.0 meV
 
