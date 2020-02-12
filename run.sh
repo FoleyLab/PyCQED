@@ -1,33 +1,33 @@
 #!/usr/bin/bash       
-python pol_sys_input.py 0.1 2.45 0.1 test1 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test2 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test3 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test4 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test5 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test6 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test7 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test8 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test9 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test10 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test11 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test12 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test13 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test14 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test15 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test16 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test17 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test18 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test19 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test20 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test21 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test22 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test23 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test24 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test25 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test26 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test27 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test28 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test29 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test30 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test31 >> test_omc_2.45_hgc_0.1.txt
-python pol_sys_input.py 0.1 2.45 0.1 test32 >> test_omc_2.45_hgc_0.1.txt
+python pol_sys_input.py 1.0 2.45 0.02 test1 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test2 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test3 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test4 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test5 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test6 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test7 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test8 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test9 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test10 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test11 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test12 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test13 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test14 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test15 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test16 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test17 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test18 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test19 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test20 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test21 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test22 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test23 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test24 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test25 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test26 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test27 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test28 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test29 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test30 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test31 >> test_omc_2.45_hgc_0.02.txt &
+python pol_sys_input.py 1.0 2.45 0.02 test32 >> test_omc_2.45_hgc_0.02.txt &
