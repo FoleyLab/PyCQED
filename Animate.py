@@ -24,10 +24,10 @@ import time
 print(" What is the prefix for your data files?")
 prefix = input()
 
-r_of_t = np.zeros((32,8000))
-t_of_t = np.zeros(8000)
-e_of_t = np.zeros((32,8000))
-for i in range(1,33):
+r_of_t = np.zeros((2,80))
+t_of_t = np.zeros(80)
+e_of_t = np.zeros((2,80))
+for i in range(1,3):
     file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
     print(file_path)
     a = np.loadtxt(file_path)
@@ -51,7 +51,7 @@ PPES[:,1] = b[:,2]
 PPES[:,2] = b[:,3]
 PPES[:,3] = b[:,4]
 
-
+'''
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 6.5))
 ax.grid()
@@ -98,3 +98,29 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 1),
 #ani.save('traj_gam_5p0.gif', writer='imagemagick')
 #ani.save('test.mp4', fps=15, extra_args=['-vcodec', 'libx264'])
 plt.show()
+'''
+
+fp1 = "Data/ntest1_electronic.txt"
+fp2 = "Data/ntest2_electronic.txt"
+fp3 = "Data/ntest1_nuc_traj.txt" 
+
+
+#rt = np.zeros(80)
+#rho1 = np.zeros((80,4))
+#rho2 = np.zeros((80,4))
+p1 = np.loadtxt(fp1)
+p2 = np.loadtxt(fp2)
+tr = np.loadtxt(fp3)
+
+plt.plot(p1[:,0], p1[:,6], label='1 pp22')
+plt.plot(p1[:,0], p1[:,7], label='1 pp33')
+plt.plot(tr[:,0], (2*tr[:,2]/0.18258794364057063-1.4), label='trajectory')
+#plt.plot(p2[:,0], p2[:,6], label='2 pp22')
+#plt.plot(p2[:,0], p2[:,7], label='2 pp33')
+plt.legend()
+plt.show()
+
+
+
+
+

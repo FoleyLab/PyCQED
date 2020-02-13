@@ -38,7 +38,7 @@ gc = gp/27.211
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[5]
+prefix = 'sys.argv[5]
 #prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
@@ -85,11 +85,17 @@ polt.Write_PES(pes_fn, pc_fn)
 
 ### Return to a randomly-chosen initial position and velocity!
 ### Repeat N_repeats number of times
+electronic_file = open(ed_fn, "w")
+nuclear_file = open(nuc_traj_fn, "w")
 for j in range(0,N_repeats):
+    
+    
     polt.Initialize_Phase_Space()
     
     ri_init = polt.R
     vi_init = polt.V
+    
+    polt.active_index = polt.initial_state
     
     ### uncomment if you wish to print the initial conditions
     #print("  Initial Position is ",polt.R)
@@ -101,7 +107,7 @@ for j in range(0,N_repeats):
     polt.Transform_L_to_P()
     polt.D_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=complex)
     ### hard-coding this!
-    polt.D_polariton[2,2] = 1+0j
+    polt.D_polariton[polt.initial_state,polt.initial_state] = 1+0j
     polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
     polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
     polt.Transform_L_to_P()
@@ -112,8 +118,8 @@ for j in range(0,N_repeats):
     
     ### un-comment open files for writing data about electronic and nuclear dynamics
     if N_repeats==1:
-        electronic_file = open(ed_fn, "w")
-        nuclear_file = open(nuc_traj_fn, "w")
+        #electronic_file = open(ed_fn, "w")
+        #nuclear_file = open(nuc_traj_fn, "w")
         polt.Write_Trajectory(0, nuclear_file, electronic_file)
     
     
@@ -122,7 +128,8 @@ for j in range(0,N_repeats):
     
     ### start dynamics
     r_array = []
-    
+    #print("repeat is ", j+1,"active index is ",polt.active_index)
+    #print("r_array is ",r_array)
     for i in range(1,N_time):
         
         #### Call FSSH update to update nuclear and electronic coordinates
@@ -132,6 +139,7 @@ for j in range(0,N_repeats):
         if N_repeats == 1 and i%500==0:
             
             polt.Write_Trajectory(i, nuclear_file, electronic_file)
+            #print("repeat is ", j+1,"active index is ",polt.active_index)
             
         ### After a while, start accumulating the position so you can average it!
         if i>N_thresh:
@@ -140,9 +148,9 @@ for j in range(0,N_repeats):
     time_taken = end-start
     
     ### uncomment if you are writing trajectory data!
-    if N_repeats==1:
-        electronic_file.close()
-        nuclear_file.close()
+    #if N_repeats==2:
+    #    electronic_file.close()
+    #    nuclear_file.close()
 
     
     avg_r = sum(r_array) / len(r_array)
@@ -153,5 +161,9 @@ for j in range(0,N_repeats):
         iso_res = 0
         
     print(time_taken/60., ri_init, vi_init, gamp, omp, gp, avg_r, iso_res)
+    
+if N_repeats==1:
+    electronic_file.close()
+    nuclear_file.close()
     
 
