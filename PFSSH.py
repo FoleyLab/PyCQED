@@ -38,7 +38,7 @@ gc = gp/27.211
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = 'sys.argv[5]
+prefix = sys.argv[5]
 #prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
