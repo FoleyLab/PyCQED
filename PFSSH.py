@@ -16,26 +16,29 @@ import sys
 ### dummi initial position and velocity values
 ri_init = -0.66156
 vi_init = 3.3375e-5
+
+### Number of repeates
+N_repeats = int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[1]) 
+gamp = float(sys.argv[2]) 
 #gamp = 0.1
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = float(sys.argv[2])
+omp = float(sys.argv[3])
 #omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[3])
+gp = float(sys.argv[4])
 #gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[4]
+prefix = sys.argv[5]
 #prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
@@ -49,7 +52,6 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
 ### Number of updates!
 N_time = 4000000
-N_repeats = 5
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -109,11 +111,11 @@ for j in range(0,N_repeats):
     #print(polt.D_local)
     
     ### un-comment open files for writing data about electronic and nuclear dynamics
-    '''
-    electronic_file = open(ed_fn, "w")
-    nuclear_file = open(nuc_traj_fn, "w")
-    polt.Write_Trajectory(0, nuclear_file, electronic_file)
-    '''
+    if N_repeats==1:
+        electronic_file = open(ed_fn, "w")
+        nuclear_file = open(nuc_traj_fn, "w")
+        polt.Write_Trajectory(0, nuclear_file, electronic_file)
+    
     
     ### start timing
     start = time.time()
@@ -127,12 +129,10 @@ for j in range(0,N_repeats):
         polt.FSSH_Update()
         
         ### Uncomment if you wish to write trajectory data!
-        '''
-        if i%500==0:
+        if N_repeats == 1 and i%500==0:
             
             polt.Write_Trajectory(i, nuclear_file, electronic_file)
             
-        '''
         ### After a while, start accumulating the position so you can average it!
         if i>N_thresh:
             r_array.append(polt.R)
@@ -140,10 +140,10 @@ for j in range(0,N_repeats):
     time_taken = end-start
     
     ### uncomment if you are writing trajectory data!
-    '''
-    electronic_file.close()
-    nuclear_file.close()
-    ''' 
+    if N_repeats==1:
+        electronic_file.close()
+        nuclear_file.close()
+
     
     avg_r = sum(r_array) / len(r_array)
     
