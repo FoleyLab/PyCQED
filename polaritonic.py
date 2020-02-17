@@ -31,10 +31,17 @@ class polaritonic:
         ### local basis first
         self.H_electronic = np.zeros((self.N_basis_states,self.N_basis_states))
         self.H_photonic = np.zeros((self.N_basis_states,self.N_basis_states))
+
         self.H_interaction = np.zeros((self.N_basis_states,self.N_basis_states))
         self.H_total = np.zeros((self.N_basis_states,self.N_basis_states))
+        
         ### polaritonic basis Hamiltonian
         self.H_polariton = np.zeros((self.N_basis_states,self.N_basis_states))
+        
+        ### complex versions of these Hamiltonians
+        self.Hc_photonic = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.Hc_total = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.Hc_polariton = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
         
         ### Density matrix  arrays
         self.D_local = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
@@ -47,6 +54,10 @@ class polaritonic:
         self.transformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states))
         self.polariton_energies = np.zeros(self.N_basis_states)
         
+        ### Complex transformation vecs and energies
+        self.ctransformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.cpolariton_energies = np.zeros(self.N_basis_states,dtype=complex)
+        
         ### Hamiltonians
         self.H_e()
         #print(self.H_electronic)
@@ -55,6 +66,8 @@ class polaritonic:
         self.H_ep()
         #print(self.H_interaction)
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
         
         ### Density Matrices
         self.D_local[self.initial_state,self.initial_state] = 1+0j
@@ -122,6 +135,12 @@ class polaritonic:
         return 1
     ''' Method that parses input dictionary '''
     def parse_options(self, args):
+        ### are we treating the photon frequencies as complex quantities?
+        if 'Complex_Frequency' in args: 
+            self.Complex_Frequency = args['Complex_Frequency']
+        else:
+            self.Complex_Frequency = False
+            
         if 'Initial_Position' in args:
             self.R = args['Initial_Position']
         ### arbitrary defaul initial position
@@ -253,16 +272,20 @@ class polaritonic:
         return 1
     
     def H_p(self):
-        
-        
+        ci = 0+1j
         for i in range(0,self.N_basis_states):
             val = 0
+            cval = 0+0j
             for j in range(1,self.NPhoton+1):
                 if self.local_basis[i,j] == 0:
                     val = val + 0.5 * self.omc[j-1]
+                    cval = cval + 0.5 * (self.omc[j-1] + ci * self.gamma_photon[j-1])
                 elif self.local_basis[i,j] == 1:
                     val = val + 1.5 * self.omc[j-1]
+                    cval = cval + 1.5 * (self.omc[j-1] + ci * self.gamma_photon[j-1])
             self.H_photonic[i,i] = val
+            self.Hc_photonic[i,i] = cval
+            
             
         return 1
     
@@ -387,6 +410,26 @@ class polaritonic:
 
         return 1
     
+    
+    def cTransform_L_to_P(self):
+        vals, vecs = LA.eig(self.Hc_total)
+        ### sort the eigenvectors
+        idx = vals.argsort()[::1]
+        vals = vals[idx]
+        v = vecs[:,idx]
+        ### store eigenvectors and eigenvalues
+        self.ctransformation_vecs_L_to_P = np.copy(v)
+        self.cpolariton_energies = np.copy(vals)
+        ### transform Htot with v^-1
+        vt0 = np.dot(LA.inv(v),self.H_total)
+        ### finish transformation to polariton basis, Hpl
+        self.Hc_polariton = np.dot(vt0,v)
+        ### now do transformation for density matrix from local to polariton basis
+        dt0 = np.dot(LA.inv(v), self.D_local)
+        self.D_polariton = np.dot(dt0,v)
+        ### return Hpl and Dpl
+
+        return 1
     def Transform_P_to_L(self):
         ### now do transformation for density matrix from local to polariton basis
         dt0 = np.dot(self.transformation_vecs_L_to_P, self.D_polariton)
@@ -751,9 +794,11 @@ class polaritonic:
             wr_str = wr_str + str(self.R) + " "
             pc_str = pc_str + str(self.R) + " "
             self.H_e()
+            self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            self.cTransform_L_to_P()
             self.Transform_L_to_P()
-            v = self.transformation_vecs_L_to_P
+            v = self.ctransformation_vecs_L_to_P
             
             for i in range(0,self.N_basis_states):
                 PES[r,i] = self.polariton_energies[i]
@@ -766,7 +811,7 @@ class polaritonic:
                 pc = 0
                 for j in range(0,self.N_basis_states):
                     if self.gamma_diss[j]>0:
-                        pc = pc + cv_i[j] * v_i[j]
+                        pc = pc + np.real(cv_i[j] * v_i[j])
                         
                 pc_str = pc_str + str(pc) + " "
         

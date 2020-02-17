@@ -13,14 +13,14 @@ from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
 from matplotlib import animation
-#from scipy import interpolate
-#from scipy.interpolate import InterpolatedUnivariateSpline
-#import matplotlib.animation as animation
-
-import time
+from matplotlib import cm
+from matplotlib import rcParams
+rcParams['font.family'] = 'serif'
+rcParams['font.size'] = 12
+ci = 0+1j
 
 ### go through and read nuclear dynamics trajectories from each data file
-
+'''
 print(" What is the prefix for your data files?")
 prefix = input()
 
@@ -50,7 +50,7 @@ PPES[:,0] = b[:,1]
 PPES[:,1] = b[:,2]
 PPES[:,2] = b[:,3]
 PPES[:,3] = b[:,4]
-
+'''
 '''
 fig = plt.figure()
 ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 6.5))
@@ -100,9 +100,9 @@ ani = animation.FuncAnimation(fig, animate, range(1, len(t_of_t), 1),
 plt.show()
 '''
 
-fp1 = "Data/ntest1_electronic.txt"
-fp2 = "Data/ntest2_electronic.txt"
-fp3 = "Data/ntest1_nuc_traj.txt" 
+fp1 = "Data/test_photon_contribution.txt"
+fp2 = "Data/test_pes.txt"
+#fp3 = "Data/ntest1_nuc_traj.txt" 
 
 
 #rt = np.zeros(80)
@@ -110,14 +110,22 @@ fp3 = "Data/ntest1_nuc_traj.txt"
 #rho2 = np.zeros((80,4))
 p1 = np.loadtxt(fp1)
 p2 = np.loadtxt(fp2)
-tr = np.loadtxt(fp3)
 
-plt.plot(p1[:,0], p1[:,6], label='1 pp22')
-plt.plot(p1[:,0], p1[:,7], label='1 pp33')
-plt.plot(tr[:,0], (2*tr[:,2]/0.18258794364057063-1.4), label='trajectory')
-#plt.plot(p2[:,0], p2[:,6], label='2 pp22')
-#plt.plot(p2[:,0], p2[:,7], label='2 pp33')
-plt.legend()
+
+
+fig, ax = plt.subplots()
+cm = plt.cm.get_cmap('rainbow')
+im = ax.scatter(p2[:,0], 27.211*p2[:,1], c=p1[:,1], cmap=cm, s=4) 
+im = ax.scatter(p2[:,0], 27.211*p2[:,2], c=p1[:,2], cmap=cm, s=4)
+im = ax.scatter(p2[:,0], 27.211*p2[:,3], c=p1[:,3], cmap=cm, s=4)
+im = ax.scatter(p2[:,0], 27.211*p2[:,4], c=p1[:,4], cmap=cm, s=4)
+cbar = fig.colorbar(im, ticks=[0.1, 0.5, 0.9])
+cbar.ax.set_yticklabels(['excitonic', 'polaritonic', 'photonic'])
+plt.xlim(-1.,1.)
+#plt.ylim(3.5,6.)
+plt.xlabel("R (a.u.)")
+plt.ylabel("Energy (eV)")
+#plt.savefig(filename)
 plt.show()
 
 
