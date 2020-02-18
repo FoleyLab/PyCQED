@@ -74,6 +74,7 @@ class polaritonic:
         
         ### derivative coupling
         self.dc = np.zeros((self.N_basis_states,self.N_basis_states))
+        self.cdc = np.zeros((self.N_basis_states,self.N_basis_states),dtype=complex)
         ### differences between polaritonic surface values
         self.Delta_V_jk = np.zeros((self.N_basis_states,self.N_basis_states))
         
@@ -279,10 +280,10 @@ class polaritonic:
             for j in range(1,self.NPhoton+1):
                 if self.local_basis[i,j] == 0:
                     val = val + 0.5 * self.omc[j-1]
-                    cval = cval + 0.5 * (self.omc[j-1] + ci * self.gamma_photon[j-1])
+                    cval = cval + 0.5 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
                 elif self.local_basis[i,j] == 1:
                     val = val + 1.5 * self.omc[j-1]
-                    cval = cval + 1.5 * (self.omc[j-1] + ci * self.gamma_photon[j-1])
+                    cval = cval + 1.5 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
             self.H_photonic[i,i] = val
             self.Hc_photonic[i,i] = cval
             
@@ -740,8 +741,8 @@ class polaritonic:
                     Vjj = self.TrHD(self.H_total, D_jj)
                     #D_ij = np.copy(self.DM_Projector[:,:,i,j])
                     cup = self.TrHD(H_prime, D_ij)
-                    self.dc[i,j] = cup/(Vjj-Vii)
-                    self.dc[j,i] = cup/(Vii-Vjj)
+                    self.dc[i,j] = -1*cup/(Vjj-Vii)
+                    self.dc[j,i] = -1*cup/(Vii-Vjj)
                     self.Delta_V_jk[i,j] = Vii-Vjj
                     self.Delta_V_jk[j,i] = Vjj-Vii
                     
@@ -764,10 +765,10 @@ class polaritonic:
                     Vjj = self.TrHD(self.Hc_total, D_jj)
                     #D_ij = np.copy(self.DM_Projector[:,:,i,j])
                     cup = self.TrHD(H_prime, D_ij)
-                    self.dc[i,j] = cup/(Vjj-Vii)
-                    self.dc[j,i] = cup/(Vii-Vjj)
-                    self.Delta_V_jk[i,j] = Vii-Vjj
-                    self.Delta_V_jk[j,i] = Vjj-Vii
+                    self.cdc[i,j] = -1*cup/(Vjj-Vii)
+                    self.cdc[j,i] = -1*cup/(Vii-Vjj)
+                    #self.Delta_V_jk[i,j] = Vii-Vjj
+                    #self.Delta_V_jk[j,i] = Vjj-Vii
                     
         return 1
     
@@ -962,9 +963,9 @@ class polaritonic:
             F_33 = self.TrHD(Hprime, D_33)
             F_22 = self.TrHD(Hprime, D_22)
             
-            d_32 = self.dc[2,1]
+            d_32 = self.cdc[2,1]
             
-            wr_str = wr_str + str(F_33) + " " + str(F_22) + " " + str(d_32) + "\n"
+            wr_str = wr_str + str(F_22) + " " + str(F_33) + " " + str(d_32) + "\n"
             hf_file.write(wr_str)
         
         
@@ -986,6 +987,7 @@ class polaritonic:
             ### update total Hamiltonian with complex photonic contribution
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
             self.Transform_L_to_P()
+            
             D_33 = np.outer(self.transformation_vecs_L_to_P[:,2], 
                              np.conj(self.transformation_vecs_L_to_P[:,2]))
             D_22 = np.outer(self.transformation_vecs_L_to_P[:,1], 
@@ -1019,7 +1021,7 @@ class polaritonic:
             
             d_32 = self.dc[2,1]
             
-            wr_str = wr_str + str(F_33) + " " + str(F_22) + " " + str(d_32) + "\n"
+            wr_str = wr_str + str(F_22) + " " + str(F_33) + " " + str(d_32) + "\n"
             hf_file.write(wr_str)
         
         
