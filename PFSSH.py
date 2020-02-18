@@ -49,6 +49,8 @@ ed_fn = "Data/" + prefix + '_electronic.txt'
 ### filename to write photonic contributions of each state to
 pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
+### hellman-Feynman file 
+hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
 N_time = 40#00000

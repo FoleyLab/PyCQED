@@ -747,6 +747,30 @@ class polaritonic:
                     
         return 1
     
+    def cDerivative_Coupling(self, H_prime):
+        ### Compute derivative coupling in local basis
+        for i in range(0, self.N_basis_states):
+            D_ii = np.outer(self.ctransformation_vecs_L_to_P[:,i], 
+                         np.conj(self.ctransformation_vecs_L_to_P[:,i]))
+            Vii = self.TrHD(self.Hc_total, D_ii)
+            
+            for j in range(i, self.N_basis_states):
+                if (i!=j):
+                    D_jj = np.outer(self.ctransformation_vecs_L_to_P[:,j], 
+                         np.conj(self.ctransformation_vecs_L_to_P[:,j]))
+                    D_ij = np.outer(self.ctransformation_vecs_L_to_P[:,i], 
+                         np.conj(self.ctransformation_vecs_L_to_P[:,j]))
+                    
+                    Vjj = self.TrHD(self.Hc_total, D_jj)
+                    #D_ij = np.copy(self.DM_Projector[:,:,i,j])
+                    cup = self.TrHD(H_prime, D_ij)
+                    self.dc[i,j] = cup/(Vjj-Vii)
+                    self.dc[j,i] = cup/(Vii-Vjj)
+                    self.Delta_V_jk[i,j] = Vii-Vjj
+                    self.Delta_V_jk[j,i] = Vjj-Vii
+                    
+        return 1
+    
     ''' Function to initialize position and velocity for a nuclear trajectory; will use
         hard-coded values of the Mass and Force Constant for the time  being but should be
         generalized!  '''
@@ -794,11 +818,9 @@ class polaritonic:
             wr_str = wr_str + str(self.R) + " "
             pc_str = pc_str + str(self.R) + " "
             self.H_e()
-            self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-            self.cTransform_L_to_P()
             self.Transform_L_to_P()
-            v = self.ctransformation_vecs_L_to_P
+            v = self.transformation_vecs_L_to_P
             
             for i in range(0,self.N_basis_states):
                 PES[r,i] = self.polariton_energies[i]
@@ -806,6 +828,52 @@ class polaritonic:
                 cv_i = np.conj(v_i)
                 
                 wr_str = wr_str + str(self.polariton_energies[i]) + " "
+                
+                ### loop over all photon indices in basis states
+                pc = 0
+                for j in range(0,self.N_basis_states):
+                    if self.gamma_diss[j]>0:
+                        pc = pc + np.real(cv_i[j] * v_i[j])
+                        
+                pc_str = pc_str + str(pc) + " "
+        
+            wr_str = wr_str + "\n"
+            pc_str = pc_str + "\n"        
+            pes_file.write(wr_str)
+            pc_file.write(pc_str)
+        
+        ### Close PES file
+        pes_file.close()
+        pc_file.close()
+        
+        return 1
+    
+    def Write_CPES(self, cpes_fn, cpc_fn):
+        
+        rlist = np.linspace(-1.5, 1.5, 500)
+        PES = np.zeros((len(rlist),self.N_basis_states),dtype=complex)
+        
+        ### Get PES of polaritonic system and write to file pes_fn
+        pes_file = open(cpes_fn, "w")
+        pc_file = open(cpc_fn, "w")
+        
+        for r in range(0,len(rlist)):
+            wr_str = " "
+            pc_str = " "
+            self.R = rlist[r]
+            wr_str = wr_str + str(self.R) + " "
+            pc_str = pc_str + str(self.R) + " "
+            self.H_e()
+            self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+            self.cTransform_L_to_P()
+            v = self.ctransformation_vecs_L_to_P
+            
+            for i in range(0,self.N_basis_states):
+                PES[r,i] = self.cpolariton_energies[i]
+                v_i = v[:,i]
+                cv_i = np.conj(v_i)
+                
+                wr_str = wr_str + str(self.cpolariton_energies[i]) + " "
                 
                 ### loop over all photon indices in basis states
                 pc = 0
@@ -846,6 +914,117 @@ class polaritonic:
         electronic_file.write(e_str)
         nuclear_file.write(n_str)
         
+        return 1
+    
+    ### will write Hellman-Feynman force and derivative coupling for surface 3 and surface 2
+    def Write_CForces(self, prefix):
+        
+        hf_file = open(prefix, "w")
+        rlist = np.linspace(-1.5, 1.5, 500)
+        
+        for r in range(0,len(rlist)):
+            wr_str = " "
+            self.R = rlist[r]
+            wr_str = wr_str + str(self.R) + " "
+            ### update electronic Hamiltonian
+            self.H_e()
+            ### update total Hamiltonian with complex photonic contribution
+            self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+            self.cTransform_L_to_P()
+            D_33 = np.outer(self.ctransformation_vecs_L_to_P[:,2], 
+                             np.conj(self.ctransformation_vecs_L_to_P[:,2]))
+            D_22 = np.outer(self.ctransformation_vecs_L_to_P[:,1], 
+                             np.conj(self.ctransformation_vecs_L_to_P[:,1]))
+            
+            ### Get dH/dR in local basis
+            self.R = self.R + self.dr
+            self.H_e()
+            Hf = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+            
+            self.R = self.R - 2*self.dr
+            self.H_e()
+            Hb = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+            
+            Hprime = np.copy((Hf-Hb)/(2*self.dr))
+            
+            ### go back to r_curr
+            self.R = self.R + self.dr
+            
+            ### Get total Hamiltonian at current position
+            self.H_e()
+            self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+            
+            ### Get derivative coupling at current position... 
+            ### Note transformation vecs are still at current value of self.R,
+            ### they were not recomputed at any displaced values
+            self.cDerivative_Coupling(Hprime)
+            
+            F_33 = self.TrHD(Hprime, D_33)
+            F_22 = self.TrHD(Hprime, D_22)
+            
+            d_32 = self.dc[2,1]
+            
+            wr_str = wr_str + str(F_33) + " " + str(F_22) + " " + str(d_32) + "\n"
+            hf_file.write(wr_str)
+        
+        
+        
+        hf_file.close()
+        return 1
+    
+    def Write_Forces(self, prefix):
+        
+        hf_file = open(prefix, "w")
+        rlist = np.linspace(-1.5, 1.5, 500)
+        
+        for r in range(0,len(rlist)):
+            wr_str = " "
+            self.R = rlist[r]
+            wr_str = wr_str + str(self.R) + " "
+            ### update electronic Hamiltonian
+            self.H_e()
+            ### update total Hamiltonian with complex photonic contribution
+            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            self.Transform_L_to_P()
+            D_33 = np.outer(self.transformation_vecs_L_to_P[:,2], 
+                             np.conj(self.transformation_vecs_L_to_P[:,2]))
+            D_22 = np.outer(self.transformation_vecs_L_to_P[:,1], 
+                             np.conj(self.transformation_vecs_L_to_P[:,1]))
+            
+            ### Get dH/dR in local basis
+            self.R = self.R + self.dr
+            self.H_e()
+            Hf = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            
+            self.R = self.R - 2*self.dr
+            self.H_e()
+            Hb = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            
+            Hprime = np.copy((Hf-Hb)/(2*self.dr))
+            
+            ### go back to r_curr
+            self.R = self.R + self.dr
+            
+            ### Get total Hamiltonian at current position
+            self.H_e()
+            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            
+            ### Get derivative coupling at current position... 
+            ### Note transformation vecs are still at current value of self.R,
+            ### they were not recomputed at any displaced values
+            self.Derivative_Coupling(Hprime)
+            
+            F_33 = self.TrHD(Hprime, D_33)
+            F_22 = self.TrHD(Hprime, D_22)
+            
+            d_32 = self.dc[2,1]
+            
+            wr_str = wr_str + str(F_33) + " " + str(F_22) + " " + str(d_32) + "\n"
+            hf_file.write(wr_str)
+        
+        
+        
+        hf_file.close()
         return 1
 '''
 
