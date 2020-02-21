@@ -20,15 +20,16 @@ rcParams['font.size'] = 12
 ci = 0+1j
 
 ### go through and read nuclear dynamics trajectories from each data file
-'''
+
 print(" What is the prefix for your data files?")
 prefix = input()
 
-r_of_t = np.zeros((2,80))
-t_of_t = np.zeros(80)
-e_of_t = np.zeros((2,80))
-for i in range(1,3):
-    file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
+r_of_t = np.zeros((2,8000))
+t_of_t = np.zeros(8000)
+e_of_t = np.zeros((2,8000))
+for i in range(1,2):
+    #file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
+    file_path = "Data/test_gam_0.1_meV_nuc_traj.txt"
     print(file_path)
     a = np.loadtxt(file_path)
     #print(len(a[:,0]))
@@ -42,7 +43,7 @@ dt = 0.12
 rlist = np.zeros(500)
 PPES = np.zeros((500,4))
 
-file_path = "Data/" + prefix + "1_pes.txt"
+file_path = "Data/" + prefix + "_pes.txt"
 b = np.loadtxt(file_path)
 
 rlist[:] = b[:,0]
@@ -128,7 +129,7 @@ plt.ylabel("Energy (eV)")
 #plt.savefig(filename)
 plt.show()
 
-
+'''
 
 
 

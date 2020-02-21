@@ -443,28 +443,28 @@ class polaritonic:
         ### Get k1
         self.D1 = np.copy(self.D_local)    
         self.k1 = np.copy(self.dt * self.DDot(self.H_total,self.D1) - 
-                          ci * self.dt * self.V * self.DDot(self.dc, self.D1) + 
+                          ci * self.dt * self.V * self.DDot(self.cdc, self.D1) + 
                           self.dt * self.L_Diss(self.D1))# uncomment for dephasing + 
                           #self.dt * self.L_Deph(self.D1))
         
         ### Update H and D and get k2
         self.D2 = np.copy(self.D_local+self.k1/2.)
         self.k2 = np.copy(self.dt * self.DDot(self.H_total, self.D2) - 
-                          ci * self.dt * self.V * self.DDot(self.dc, self.D2) + 
+                          ci * self.dt * self.V * self.DDot(self.cdc, self.D2) + 
                           self.dt * self.L_Diss(self.D2)) #uncomment for dephasing + 
                           #self.dt * self.L_Deph(self.D2))
         
         ### UPdate H and D and get k3
         self.D3 = np.copy(self.D_local+self.k2/2)
         self.k3 = np.copy(self.dt*self.DDot(self.H_total, self.D3) - 
-                          ci * self.dt * self.V * self.DDot(self.dc, self.D3) + 
+                          ci * self.dt * self.V * self.DDot(self.cdc, self.D3) + 
                           self.dt * self.L_Diss(self.D3)) # uncomment for dephasing + 
                           #self.dt * self.L_Deph(self.D3)
         
         ### Update H and D and get K4
         self.D4 = np.copy(self.D_local+self.k3)
         self.k4 = np.copy(self.dt * self.DDot(self.H_total, self.D4) - 
-                          ci * self.dt * self.V * self.DDot(self.dc, self.D4) + 
+                          ci * self.dt * self.V * self.DDot(self.cdc, self.D4) + 
                           self.dt * self.L_Diss(self.D4)) # uncomment for dephasing+ 
                           #self.dt * self.L_Deph(self.D4)
         
@@ -525,20 +525,25 @@ class polaritonic:
         ### current active index (which refers to a surface in the polariton basis)
         
         ### Get transformation vectors at current R
-        self.Transform_L_to_P()
+        self.cTransform_L_to_P()
+        '''self.Transform_L_to_P()'''
         ### Get corresponding density matrix in local basis
-        D_act = np.outer(self.transformation_vecs_L_to_P[:,self.active_index], 
-                         np.conj(self.transformation_vecs_L_to_P[:,self.active_index]))
+        D_act = np.outer(self.ctransformation_vecs_L_to_P[:,self.active_index], 
+                         np.conj(self.ctransformation_vecs_L_to_P[:,self.active_index]))
         
         ### Get dH/dR in local basis
         self.R = self.R + self.dr
         self.H_e()
-        Hf = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        '''Hf = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)'''
+        Hf = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
 
         
         self.R = self.R - 2*self.dr
         self.H_e()
-        Hb = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        '''Hb = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)'''
+        Hb = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
 
         Hprime = np.copy((Hf-Hb)/(2*self.dr))
         
@@ -547,11 +552,14 @@ class polaritonic:
         
         ### Get total Hamiltonian at current position
         self.H_e()
+        ### This H_total will be used in RK4... it is pure real!
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
         ### Get derivative coupling at current position... 
         ### Note transformation vecs are still at current value of self.R,
         ### they were not recomputed at any displaced values
+        '''self.Derivative_Coupling(Hprime)'''
+        self.cDerivative_Coupling(Hprime)
         self.Derivative_Coupling(Hprime)
         
 
@@ -566,13 +574,15 @@ class polaritonic:
         ### update density matrix
         self.RK4_NA() 
         ### get updated density matrix in polariton basis as well
-        self.Transform_L_to_P()
+        '''self.Transform_L_to_P()'''
+        self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+        ### Now updated density matrix is transformed to the complex polariton basis!
+        self.cTransform_L_to_P()
         
         ### get future populations in local basis
         for i in range(0,self.N_basis_states):
             pop_fut[i] = np.real(self.D_polariton[i, i])
-             
-        
+      
         ### get change in populations in local basis to get hoppin
         for i in range(0,self.active_index+1):
             pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
@@ -637,21 +647,22 @@ class polaritonic:
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
+        ### Get Real Hamiltonian at new position
         H_act = np.copy(self.H_total)
         
         ### get derivative of Hpl at r_fut
         
-        ### forward step first
+        ### Get complex H_prime Hamiltonian
         self.R = self.R + self.dr
         self.H_e()
-        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        Hf = np.copy(self.H_total)
+        self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+        Hf = np.copy(self.Hc_total)
         
         ### backward step
         self.R = self.R - 2*self.dr
         self.H_e()
-        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        Hb = np.copy(self.H_total)
+        self.Hc_total = np.copy(self.H_electronic + self.Hc_photonic + self.H_interaction)
+        Hb = np.copy(self.Hc_total)
         ### derivative
         Hprime = np.copy((Hf-Hb)/(2*self.dr))
         
