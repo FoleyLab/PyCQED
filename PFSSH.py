@@ -18,27 +18,27 @@ ri_init = -0.66156
 vi_init = 3.3375e-5
 
 ### Number of repeates
-N_repeats = 1 #int(sys.argv[1])
+N_repeats = int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
-gamp = 5.0  #float(sys.argv[2]) 
+gamp = float(sys.argv[2]) 
 #gamp = 0.1
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = 2.45 #float(sys.argv[3])
+omp = float(sys.argv[3])
 #omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = 0.02 #float(sys.argv[4])
+gp = float(sys.argv[4])
 #gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = "test_gam_5.0_meV" #sys.argv[5]
+prefix = sys.argv[5]
 #prefix = "test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
