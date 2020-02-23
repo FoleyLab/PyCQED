@@ -19,8 +19,8 @@ gam_deph_np = 0 #.0001
 gam_diss_m = 0 #.0012
 gam_deph_m = 0 #.0001
 
-en_hnp = 0.075-0.0*ci
-en_mol = 0.075-0.0*ci
+en_hnp = 0.075-0.01*ci
+en_mol = 0.075-0.01*ci
 
 dt = 0.1
 gamma = np.zeros(4)
@@ -179,9 +179,11 @@ def RK4(H, D, h, t):
     D4 = np.zeros_like(D)
     
     ### Get k1
-    H1 = np.copy(H)
+    H1 = np.copy(np.real(H))
+    G1 = np.copy(np.imag(H))
+    
     D1 = np.copy(D)    
-    k1 = h*DDot(H1,D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    k1 = h*DDot(H1,D1) + h*(np.dot(G1,D1) + np.dot(D1,G1)) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
     
     ### Update H and D and get k2
     H2 = np.copy(H)
