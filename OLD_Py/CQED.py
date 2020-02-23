@@ -11,15 +11,16 @@ from numpy import linalg as LA
 import math
 from matplotlib import pyplot as plt
 
+ci=0+1j
 ### Somewhat similar to coupling strength and dissipation from HNPs
-gam_diss_np = 0.01
-gam_deph_np = 0.0001
+gam_diss_np = 0 #.001
+gam_deph_np = 0 #.0001
 
-gam_diss_m = 0.0012
-gam_deph_m = 0.0001
+gam_diss_m = 0 #.0012
+gam_deph_m = 0 #.0001
 
-en_hnp = 0.075
-en_mol = 0.075
+en_hnp = 0.075-0.01*ci
+en_mol = 0.075-0.01*ci
 
 dt = 0.1
 gamma = np.zeros(4)
@@ -108,7 +109,7 @@ def Hamiltonian(H, t):
 def H_Photon(Psi, omega):
     dim = len(Psi[0])
     ### create an array of zeros for the Hamiltonian to be filled
-    Hp = np.zeros((dim,dim))
+    Hp = np.zeros((dim,dim),dtype=complex)
     for i in range(0,dim):
         for j in range(0,dim):
             ### first check to make sure molecule and photon basis states match
@@ -126,7 +127,7 @@ def H_Molecule(Psi, omega):
     dim = len(Psi[0])
 
     ### create an array of zeros for the Hamiltonian to be filled
-    Hp = np.zeros((dim,dim))
+    Hp = np.zeros((dim,dim),dtype=complex)
     for i in range(0,dim):
         for j in range(0,dim):
             ### first check to make sure molecule and photon basis states match
@@ -144,7 +145,7 @@ def H_Interaction(Psi, g):
     dim = len(Psi[0])
     ### hg (sig^+ a + sig^- a^+ )
     ### create an array of zeros for the Hamiltonian to be filled
-    Hp = np.zeros((dim,dim))
+    Hp = np.zeros((dim,dim),dtype=complex)
     for i in range(0,dim):
         for j in range(0,dim):
             pbra = Psi[0][i]
@@ -178,26 +179,28 @@ def RK4(H, D, h, t):
     D4 = np.zeros_like(D)
     
     ### Get k1
-    H1 = Hamiltonian(H, t)
-    D1 = D    
-    k1 = h*DDot(H1,D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    H1 = np.copy(np.real(H))
+    G1 = np.copy(np.imag(H))
+    
+    D1 = np.copy(D)    
+    k1 = h*DDot(H1,D1) + h*(np.dot(G1,D1) + np.dot(D1,G1)) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
     
     ### Update H and D and get k2
-    H2 = Hamiltonian(H, t+h/2)
-    D2 = D+k1/2.
+    H2 = np.copy(H)
+    D2 = np.copy(D+k1/2.)
     k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
     
     ### UPdate H and D and get k3
-    H3 = H2
-    D3 = D+k2/2
+    H3 = np.copy(H2)
+    D3 = np.copy(D+k2/2)
     k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
     
     ### Update H and D and get K4
-    H4 = Hamiltonian(H, t+h)
-    D4 = D+k3
+    H4 = np.copy(H)
+    D4 = np.copy(D+k3)
     k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
     
-    Df = D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4)
+    Df = np.copy(D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4))
     return Df
 
 ### Form Basis states
@@ -234,7 +237,7 @@ v = vecs[:,idx]
 
 print("idx is ",idx)
 print("vals is ",vals)
-'''
+
   
 Hdiag = Transform(v, Htot)
 print(Hdiag)
@@ -269,7 +272,7 @@ Psi[1] = np.sqrt(1.)
 print(Psi)
 
 Psi[0] = np.sqrt(0.5/7)+0j
-Psi[1] = np.sqrt(1.5/7)+0j
+Psi[1] =np.sqrt(1.5/7)+0j
 Psi[2] = np.sqrt(2.0/7)+0j
 Psi[3] = np.sqrt(3.0/7)+0j
 
@@ -286,36 +289,45 @@ rho_1 = Form_Rho(bra_1)
 # Should diagonalize and show populations in diagonalized basis
 #    to see if dynamics are dramatically different 
 #
- 
+print(Dp1[0,0])
+print(Dp1[1,1])
+print(Dp1[2,2])
+print(Dp1[3,3])
 for i in range(0,Ntime):
     Dp1 = RK4(Htot, D, dt, i*dt)
     t[i] = dt*i
-    p1[i] = Dp1[0][0]
-    p2[i] = Dp1[1][1]
-    p3[i] = Dp1[2][2]
-    p4[i] = Dp1[3][3]
+    p1[i] = Dp1[0,0]
+    p2[i] = Dp1[1,1]
+    p3[i] = Dp1[2,2]
+    p4[i] = Dp1[3,3]
  #   p5[i] = Dp1[4][4]
  #   p6[i] = Dp1[5][5]
     D = Dp1
     DD = Transform(v, Dp1)
-    pd1[i] = DD[0][0]
-    pd2[i] = DD[1][1]
-    pd3[i] = DD[2][2]
-    pd4[i] = DD[3][3]
-    print(t[i],np.real(p1[i]),np.real(p2[i]),np.real(p3[i]),np.real(p4[i]),np.real(pd1[i]),np.real(pd2[i]),np.real(pd3[i]),np.real(pd4[i]))
+    pd1[i] = DD[0,0]
+    pd2[i] = DD[1,1]
+    pd3[i] = DD[2,2]
+    pd4[i] = DD[3,3]
+    #print(t[i],np.real(p1[i]),np.real(p2[i]),np.real(p3[i]),np.real(p4[i]),np.real(pd1[i]),np.real(pd2[i]),np.real(pd3[i]),np.real(pd4[i]))
 #    pd5[i] = DD[4][4]
 #    pd6[i] = DD[5][5]
     ##trp = np.trace(D)
     ##print(np.real(trp))
 
 
-plt.plot(t, np.real(p1), 'pink', t, np.real(p2), 'r--', t, np.real(p3), 'b--', t, np.real(p4), 'purple') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
-plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
+plt.plot(t, np.real(p1), 'pink', t, np.real(p2), 'b--', t, np.real(p3), 'r--', t, np.real(p4), 'purple') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+#plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
 plt.show()
 
+print(np.real(p2))
+print(Dp1[0,0])
+print(Dp1[1,1])
+print(Dp1[2,2])
+print(Dp1[3,3])
 #np.savetxt("time.txt",t)
 #np.savetxt("p1_g0.07_ghnp_0.0001_gdeph_0.005.txt",np.real(pd1))
 #print("Try higher photon numnber states!!!")
+'''
 for i in range(0,len(p1)):
     if pd1[i]>0.5:
         print("half life is ",t[i])
@@ -323,6 +335,4 @@ for i in range(0,len(p1)):
         print("decay constant in a.u. is ",0.5*np.log(2.)/t[i])
         print("decay constant in ev   is ",0.5*27*np.log(2.)/t[i])
         break
-    
-
 '''

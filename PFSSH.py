@@ -49,9 +49,11 @@ ed_fn = "Data/" + prefix + '_electronic.txt'
 ### filename to write photonic contributions of each state to
 pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 
+### hellman-Feynman file 
+hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 4000000
+N_time = 400000
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -60,6 +62,7 @@ N_thresh = int( N_time / 4)
 
 options = {
         'Number_of_Photons': 1,
+        'Complex_Frequency': True,
         'Photon_Energys': [omc],
         'Coupling_Strengths': [gc], 
         'Photon_Lifetimes': [gam_diss_np],
@@ -80,8 +83,12 @@ options = {
 ### instantiate
 polt = polaritonic(options)
 
+
 ### Write potential energy surface!
 polt.Write_PES(pes_fn, pc_fn)
+
+
+
 
 ### Return to a randomly-chosen initial position and velocity!
 ### Repeat N_repeats number of times

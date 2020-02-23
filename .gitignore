@@ -1,6 +1,7 @@
 *.pyc
+.ipynb_checkpoints/*
+Notebooks/.ipynb_checkpoints/*
 Data/*.txt
-*.ipynb
 .DS_Store
 __pycache__/
 __pycache__/*
