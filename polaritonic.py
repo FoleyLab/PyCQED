@@ -891,7 +891,7 @@ class polaritonic:
     def Write_Forces(self, prefix):
         
         hf_file = open(prefix, "w")
-        rlist = np.linspace(-1.5, 1.5, 500)
+        rlist = np.linspace(-0.75,  -0.50, 500)
         
         for r in range(0,len(rlist)):
             wr_str = " "
@@ -943,3 +943,5 @@ class polaritonic:
         
         hf_file.close()
         return 1
+    
+
