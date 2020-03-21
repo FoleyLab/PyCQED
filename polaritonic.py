@@ -521,7 +521,7 @@ class polaritonic:
         som = 0
         for i in range(0,N):
             som = som + HD[i,i]
-        return np.real(som)
+        return som
     
 
     def FSSH_Update(self):
