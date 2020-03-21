@@ -484,8 +484,52 @@ class polaritonic:
         self.D_local = np.copy(self.D_local + (1/6.)*(self.k1 + 2.*self.k2 + 2*self.k3 + self.k4))
         
         return 1
+    
+    '''  4th-order Runge-Kutta Algorithm for solving non-Hermitian 
+         Lioville Equation! '''
+    def RK4_NH(self):
+        ci = 0+1j
+        ### make a copy of the real part of H_total for each commutator!
+        ### This is the Hermitian part of the Hamiltonian
+        H_H = np.copy(np.real(self.H_total))
+        
+        ### make a copy of the imaginary part of H_total for each 
+        ### anti-commutator... this is the anti-Hermitian part of H
+        H_A = np.copy(np.imag(self.H_total))
+        
+        ### Copy current density matrix
+        self.D1 = np.copy(self.D_local)  
+        
+        ### First partial update
+        self.k1 = np.copy(-ci*self.dt * self.comm(H_H, self.D1) -
+                          ci*self.dt * self.anti_comm(H_A, self.D1)
+                          - self.dt * self.V * self.comm(self.dc, self.D1))
+        
+        
 
-
+        ### Update D and get k2
+        self.D2 = np.copy(self.D_local+self.k1/2.)
+        ### Second partial update
+        self.k2 = np.copy(-ci*self.dt * self.comm(H_H, self.D2) -
+                          ci*self.dt * self.anti_comm(H_A, self.D2)
+                          - self.dt * self.V * self.comm(self.dc, self.D2))
+        
+        
+        ### UPdate D and get k3
+        self.D3 = np.copy(self.D_local+self.k2/2)
+        self.k2 = np.copy(-ci*self.dt * self.comm(H_H, self.D3) -
+                          ci*self.dt * self.anti_comm(H_A, self.D3)
+                          - self.dt * self.V * self.comm(self.dc, self.D3))
+        
+        ### Update H and D and get K4
+        self.D4 = np.copy(self.D_local+self.k3)
+        self.k4 = np.copy(-ci*self.dt * self.comm(H_H, self.D4) -
+                          ci*self.dt * self.anti_comm(H_A, self.D4)
+                          - self.dt * self.V * self.comm(self.dc, self.D4))
+        
+        self.D_local = np.copy(self.D_local + (1/6.)*(self.k1 + 2.*self.k2 + 2*self.k3 + self.k4))
+        
+        return 1
 
 
     ### Lindblad operator that models relaxation to the ground state
@@ -507,13 +551,19 @@ class polaritonic:
             LD = np.copy(LD + t1 - gam*t2 - gam*t3)
             
         return LD
-
-
+    
+    ''' Commutator method '''
+    def comm(self, A, B):
+        return (np.dot(A,B) - np.dot(B,A))
+    
+    ''' Anti-Commutator method '''
+    def anti_comm(self, A, B):
+        return (np.dot(A,B) + np.dot(B,A))
+    
+    ''' performs commutator portion of Liouville equation '''
     def DDot(self, H, D):
         ci = 0.+1j
         return -ci*(np.dot(H,D) - np.dot(D, H))
-
-
 
     def TrHD(self, H, D):
         N = len(H)
