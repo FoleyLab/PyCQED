@@ -628,15 +628,23 @@ class polaritonic:
             self.population_polariton[i] = np.real(self.D_polariton[i, i])
             
         ### update density matrix
-        self.RK4_NA() 
+        #self.RK4_NA()
+        ### This will update all populations except D[0,0]
+        self.RK4_NH()
         ### get updated density matrix in polariton basis so we can compute population
         ### in the future in the polariton basis!
         self.Transform_L_to_P()
         
         ### get future populations in local basis
-        for i in range(0,self.N_basis_states):
+        trace = 0
+        for i in range(1,self.N_basis_states):
             pop_fut[i] = np.real(self.D_polariton[i, i])
-      
+            trace += np.real(self.D_polariton[i,i])
+            
+        pop_fut[0,0] = 1 - trace
+        self.D_polarition[0,0] = 1 - trace
+        
+        ''' review from here on 3/21/2020 to make sure FSSH is sensible '''
         ### get change in populations in local basis to get hoppin
         for i in range(0,self.active_index+1):
             pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
