@@ -86,7 +86,7 @@ class polaritonic:
         ### differences between polaritonic surface values... we will 
         ### take the differences between the absolute magnitudes of the energies so
         ### this will be a real vector
-        self.Delta_V_jk = np.zeros((self.N_basis_states,self.N_basis_states))
+        self.Delta_V_jk = np.zeros((self.N_basis_states,self.N_basis_states),dtype=complex)
         
         self.Transform_L_to_P()
         
@@ -740,6 +740,8 @@ class polaritonic:
         ### Note that the imaginary part of this trace should be zero anyway,
         ### we are just dropping the imaginary part so that F_fut will
         ### be a float data type not a complex data type!
+        
+        ''' note the full force is also real and agrees with Hellman-Feynman force '''
         F_fut = np.real(self.TrHD(Hprime, D_act))
         
         ### get energy at r_fut on active polariton surface...
@@ -768,7 +770,8 @@ class polaritonic:
             ### momentum on surface j (starting surface)
             Pj = self.V*self.M
             ### This number should always be positive!
-            delta_V = self.Delta_V_jk[starting_act_idx,self.active_index]
+            ### We will discard the imaginary part
+            delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
             
             ### speed on surface k (new surface)
             Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
@@ -815,7 +818,7 @@ class polaritonic:
         for i in range(0, self.N_basis_states):
             D_ii = np.outer(self.transformation_vecs_L_to_P[:,i], 
                          np.conj(self.transformation_vecs_L_to_P[:,i]))
-            Vii = np.abs(self.TrHD(self.H_total, D_ii))
+            Vii = self.TrHD(self.H_total, D_ii)
             
             for j in range(i, self.N_basis_states):
                 if (i!=j):
@@ -824,7 +827,7 @@ class polaritonic:
                     D_ij = np.outer(self.transformation_vecs_L_to_P[:,i], 
                          np.conj(self.transformation_vecs_L_to_P[:,j]))
                     
-                    Vjj = np.abs(self.TrHD(self.H_total, D_jj))
+                    Vjj = self.TrHD(self.H_total, D_jj)
                     #D_ij = np.copy(self.DM_Projector[:,:,i,j])
                     cup = self.TrHD(H_prime, D_ij)
                     self.dc[i,j] = -1*cup/(Vjj-Vii)
@@ -875,7 +878,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn):
         
-        rlist = np.linspace(-1.5, 1.5, 500)
+        rlist = np.linspace(-1.5, 1.5, 1000)
         
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
@@ -942,9 +945,9 @@ class polaritonic:
         
         return 1
 
-    ''' This method computes the Hellman-Feynman force on 
-        polariton surfaces 2 and 3, so it is currently specific to the
-        1-molecule 1-photon case, and writes to file.  It also computes the
+    ''' This method computes the forces using centered finite differences
+        of the energy on surface 2 and 3, and also the Hellman-Feynman force on 
+        polariton surfaces 2 and 3, and prints to file. It also computes the
         derivative coupling vectors for 3->2 and writes to file. '''
     def Write_Forces(self, prefix):
         
