@@ -643,7 +643,7 @@ class polaritonic:
             
         pop_fut[0] = 1 - trace
         ### D_polariton[0,0] = D_local[0,0] 
-        self.D_polarition[0,0] = 1 - trace
+        self.D_polariton[0,0] = 1 - trace
         self.D_local[0,0] = 1 - trace
         
         ''' review from here on 3/21/2020 to make sure FSSH is sensible '''
