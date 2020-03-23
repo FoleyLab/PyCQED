@@ -13,14 +13,14 @@ from matplotlib import pyplot as plt
 
 ci=0+1j
 ### Somewhat similar to coupling strength and dissipation from HNPs
-gam_diss_np = 0 #.001
+gam_diss_np = 0.0001 #.001
 gam_deph_np = 0 #.0001
 
 gam_diss_m = 0 #.0012
 gam_deph_m = 0 #.0001
 
-en_hnp = 0.075-0.01*ci
-en_mol = 0.075-0.01*ci
+en_hnp = 0.075 -0.0002*ci
+en_mol = 0.075 #-0.01*ci
 
 dt = 0.1
 gamma = np.zeros(4)
@@ -169,6 +169,7 @@ def H_Interaction(Psi, g):
     return Hp
     
 def RK4(H, D, h, t):
+    ci = 0+1j
     k1 = np.zeros_like(D)
     k2 = np.zeros_like(D)
     k3 = np.zeros_like(D)
@@ -183,22 +184,25 @@ def RK4(H, D, h, t):
     G1 = np.copy(np.imag(H))
     
     D1 = np.copy(D)    
-    k1 = h*DDot(H1,D1) + h*(np.dot(G1,D1) + np.dot(D1,G1)) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
-    
+    k1 = h*DDot(H1,D1)  + h*(np.dot(G1,D1) + np.dot(D1,G1)) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    #k1 = h*DDot(H1, D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
     ### Update H and D and get k2
     H2 = np.copy(H)
     D2 = np.copy(D+k1/2.)
-    k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
+    k2 = h*DDot(H1,D2)  + h*(np.dot(G1,D2) + np.dot(D2,G1))
+    #k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
     
     ### UPdate H and D and get k3
     H3 = np.copy(H2)
     D3 = np.copy(D+k2/2)
-    k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
+    k3 = h*DDot(H1,D3)  + h*(np.dot(G1,D3) + np.dot(D3,G1))
+    #k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
     
     ### Update H and D and get K4
     H4 = np.copy(H)
     D4 = np.copy(D+k3)
-    k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
+    k4 = h*DDot(H1,D4)  + h*(np.dot(G1,D4) + np.dot(D4,G1))
+    #k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
     
     Df = np.copy(D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4))
     return Df
@@ -271,10 +275,10 @@ Psi[1] = np.sqrt(1.)
 '''
 print(Psi)
 
-Psi[0] = np.sqrt(0.5/7)+0j
-Psi[1] =np.sqrt(1.5/7)+0j
-Psi[2] = np.sqrt(2.0/7)+0j
-Psi[3] = np.sqrt(3.0/7)+0j
+#Psi[0] = np.sqrt(0.5/7)+0j
+Psi[1] =np.sqrt(1/4)+0j
+Psi[2] = np.sqrt(3/4)+0j
+#Psi[3] = np.sqrt(3.0/7)+0j
 
 #Psi[4] = np.sqrt(3.5/10)+0j
 #Psi[5] = np.sqrt(1./10)+0j
@@ -289,10 +293,10 @@ rho_1 = Form_Rho(bra_1)
 # Should diagonalize and show populations in diagonalized basis
 #    to see if dynamics are dramatically different 
 #
-print(Dp1[0,0])
-print(Dp1[1,1])
-print(Dp1[2,2])
-print(Dp1[3,3])
+print(D[0,0])
+print(D[1,1])
+print(D[2,2])
+print(D[3,3])
 for i in range(0,Ntime):
     Dp1 = RK4(Htot, D, dt, i*dt)
     t[i] = dt*i
@@ -315,15 +319,15 @@ for i in range(0,Ntime):
     ##print(np.real(trp))
 
 
-plt.plot(t, np.real(p1), 'pink', t, np.real(p2), 'b--', t, np.real(p3), 'r--', t, np.real(p4), 'purple') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+plt.plot(t, np.real(p1), 'pink', t, np.real(p2), 'red', t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
 #plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
 plt.show()
 
 print(np.real(p2))
-print(Dp1[0,0])
-print(Dp1[1,1])
-print(Dp1[2,2])
-print(Dp1[3,3])
+#print(Dp1[0,0])
+#print(Dp1[1,1])
+#print(Dp1[2,2])
+#print(Dp1[3,3])
 #np.savetxt("time.txt",t)
 #np.savetxt("p1_g0.07_ghnp_0.0001_gdeph_0.005.txt",np.real(pd1))
 #print("Try higher photon numnber states!!!")
