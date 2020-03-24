@@ -61,6 +61,9 @@ class polaritonic:
         self.D_local = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
         self.D_polariton = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
         
+        ### Wavefunction arrays
+        self.C_local = np.zeros(self.N_basis_states,dtype=complex)
+        self.C_polariton = np.zeros(self.N_basis_states,dtype=complex)        
         ### Population arrays - real vectores!  Will drop imaginary part when
         ### assigning their entries!
         self.population_local = np.zeros(self.N_basis_states)
@@ -80,9 +83,13 @@ class polaritonic:
         
         ### Density Matrices
         self.D_local[self.initial_state,self.initial_state] = 1+0j
+        self.C_local[self.initial_state] = 1+0j
+        
         
         ### derivative coupling
         self.dc = np.zeros((self.N_basis_states,self.N_basis_states),dtype=complex)
+        ### derivative coupling in the polariton basis
+        self.dc_polariton = np.zeros_like(self.dc)
         ### differences between polaritonic surface values... we will 
         ### take the differences between the absolute magnitudes of the energies so
         ### this will be a real vector
@@ -90,7 +97,7 @@ class polaritonic:
         
         self.Transform_L_to_P()
         
-        ### RK4 Variables
+        ### RK4 Liouville Variables
         self.k1 = np.zeros_like(self.D_local)
         self.k2 = np.zeros_like(self.D_local)
         self.k3 = np.zeros_like(self.D_local)
@@ -99,6 +106,20 @@ class polaritonic:
         self.D2 = np.zeros_like(self.D_local)
         self.D3 = np.zeros_like(self.D_local)
         self.D4 = np.zeros_like(self.D_local)
+        
+        ### RK4 SE Variables
+        self.kc1 = np.zeros_like(self.C_local)
+        self.kc2 = np.zeros_like(self.C_local)
+        self.kc3 = np.zeros_like(self.C_local)
+        self.kc4 = np.zeros_like(self.C_local)
+        self.C1 = np.zeros_like(self.C_local)
+        self.C2 = np.zeros_like(self.C_local)
+        self.C3 = np.zeros_like(self.C_local)
+        self.C4 = np.zeros_like(self.C_local)
+        
+        
+        
+        
         
         ''' Form identity matrix and use to create a set of projectors for 
             each basis state... this will be used in the Lindblad operators! '''
@@ -486,8 +507,8 @@ class polaritonic:
         return 1
     
     '''  4th-order Runge-Kutta Algorithm for solving non-Hermitian 
-         Lioville Equation! '''
-    def RK4_NH(self):
+         Lioville Equation in local basis! '''
+    def RK4_NH_Lioville(self):
         ci = 0+1j
         ### make a copy of the real part of H_total for each commutator!
         ### This is the Hermitian part of the Hamiltonian
@@ -517,7 +538,7 @@ class polaritonic:
         
         ### UPdate D and get k3
         self.D3 = np.copy(self.D_local+self.k2/2)
-        self.k2 = np.copy(-ci*self.dt * self.comm(H_H, self.D3) -
+        self.k3 = np.copy(-ci*self.dt * self.comm(H_H, self.D3) -
                           ci*self.dt * self.anti_comm(H_A, self.D3)
                           - self.dt * self.V * self.comm(self.dc, self.D3))
         
@@ -528,6 +549,47 @@ class polaritonic:
                           - self.dt * self.V * self.comm(self.dc, self.D4))
         
         self.D_local = np.copy(self.D_local + (1/6.)*(self.k1 + 2.*self.k2 + 2*self.k3 + self.k4))
+        
+        return 1
+    
+    '''  4th-order Runge-Kutta Algorithm for solving non-Hermitian 
+         Schrodinger Equation in polariton basis! '''
+    def RK4_NH_SE(self):
+        ci = 0+1j
+        ### make a copy of the polariton Hamiltonian
+        H = np.copy(self.H_polariton)
+        ### make a copy of the derivative coupling matrix in the polariton basis
+        d = np.copy(self.dc_polariton)
+        
+        
+        ### Copy current density matrix
+        self.C1 = np.copy(self.C_polariton)  
+        
+        ### First partial update
+        self.ck1 = np.copy(-ci * self.dt * np.dot(H,self.C1) - 
+                           self.dt * self.V * np.dot(d, self.C1))
+        
+        
+
+        ### Update D and get k2
+        self.C2 = np.copy(self.C_polariton+self.ck1/2.)
+        ### Second partial update
+        self.ck2 = np.copy(-ci * self.dt * np.dot(H,self.C2) - 
+                           self.dt * self.V * np.dot(d, self.C2))
+        
+        
+        ### UPdate D and get k3
+        self.C3 = np.copy(self.C_polariton+self.ck2/2)
+        self.ck3 = np.copy(-ci * self.dt * np.dot(H,self.C3) - 
+                           self.dt * self.V * np.dot(d, self.C3))
+        
+        ### Update H and D and get K4
+        self.C4 = np.copy(self.C_polariton+self.ck3)
+        self.ck4 = np.copy(-ci * self.dt * np.dot(H,self.C4) - 
+                           self.dt * self.V * np.dot(d, self.C4))
+        
+        self.C_polariton = np.copy(self.C_polariton + 
+                                   (1/6.)*(self.ck1 + 2.*self.ck2 + 2*self.ck3 + self.ck4))
         
         return 1
 
