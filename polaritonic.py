@@ -88,8 +88,8 @@ class polaritonic:
         
         ### derivative coupling
         self.dc = np.zeros((self.N_basis_states,self.N_basis_states),dtype=complex)
-        ### derivative coupling in the polariton basis
-        self.dc_polariton = np.zeros_like(self.dc)
+        ### Hprime matrix
+        self.Hprime = np.zeros((self.N_basis_states,self.N_basis_states),dtype=complex)
         ### differences between polaritonic surface values... we will 
         ### take the differences between the absolute magnitudes of the energies so
         ### this will be a real vector
@@ -876,7 +876,8 @@ class polaritonic:
         return 1
 
     ''' Computes derivative coupling matrix in the LOCAL basis... this
-        local basis corresponds to the potentially non-Hermitian total Hamiltonian '''
+        local basis corresponds to the potentially non-Hermitian total Hamiltonian...
+        now depricated!  
     def Derivative_Coupling(self, H_prime):
         ### Compute derivative coupling in local basis
         for i in range(0, self.N_basis_states):
@@ -900,7 +901,71 @@ class polaritonic:
                     self.Delta_V_jk[j,i] = Vjj-Vii
                     
         return 1
+    '''
+    ''' Computes Hellman-Feynman force '''
+    def Hellman_Feynman(self):
+        ### get transformation vector at current R
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        self.Transform_L_to_P()
+        c = self.transformation_vecs_L_to_P[:,self.active_index]
+        cs = np.conj(c)
+        
+        ### get dH/dR
+        self.R = self.R + self.dr
+        self.H_e()
+        Hf = np.copy(self.H_electronic)
+        self.R = self.R - 2*self.dr
+        self.H_e()
+        Hb = np.copy(self.H_electronic)
+        Hp = (Hf - Hb)/(2*self.dr)
+        ### Return to innocence
+        self.R = self.R + self.dr
+        tmp = np.dot(Hp, c)
+        F = -1*np.dot(cs,tmp)
+        return F
+        
+        
+        
     
+    
+    ''' Computes Derivative Coupling Matrix '''
+    def Derivative_Coupling(self):
+        
+        ### Compute H_prime
+        ### Forward displacement
+        self.R = self.R + self.dr
+        
+        ### update H_e
+        self.H_e()
+        ### H at forward step
+        Hf = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        ### backward displacement
+        self.R = self.R - 2*self.dr
+        ### update electronic H
+        self.H_e()
+        Hb = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        Hp = np.copy((Hf - Hb)/(2*self.dr))
+        ### Compute H
+        self.R = self.R + self.dr
+        self.H_e()
+        ### H at forward step
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        self.Transform_L_to_P()
+
+        
+        for j in range(1,2): #self.N_basis_states):
+            for k in range(2,3): #self.N_basis_states):
+                if j!=k:
+                    Vjj = self.polariton_energies[j]
+                    Vkk = self.polariton_energies[k]
+                    cj = self.transformation_vecs_L_to_P[:,j]
+                    ck = self.transformation_vecs_L_to_P[:,k]
+                    tmp = np.dot(Hp, ck)
+                    Fjk = -1*np.dot(np.conj(cj), tmp)
+                    self.dc[j,k] = Fjk/(Vkk-Vjj)
+        return 1
+        
     
     ''' Function to initialize position and velocity for a nuclear trajectory; will use
         hard-coded values of the Mass and Force Constant for the time  being but should be
