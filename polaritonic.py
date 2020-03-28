@@ -559,7 +559,7 @@ class polaritonic:
         ### make a copy of the polariton Hamiltonian
         H = np.copy(self.H_polariton)
         ### make a copy of the derivative coupling matrix in the polariton basis
-        d = np.copy(self.dc_polariton)
+        d = np.copy(self.dc)
         
         
         ### Copy current density matrix
@@ -634,8 +634,195 @@ class polaritonic:
         for i in range(0,N):
             som = som + HD[i,i]
         return som
-    
 
+    ''' Non-Hermitian FSSH update '''
+    def NH_FSSH(self):
+        ### set up some quantities for surface hopping first!
+        switch=0
+        sign = 1
+        starting_act_idx = self.active_index
+        ### allocate a few arrays we will need
+        pop_cur = np.zeros(self.N_basis_states,dtype=complex)
+        pop_fut = np.zeros(self.N_basis_states,dtype=complex)
+        pop_dot = np.zeros(self.N_basis_states,dtype=complex)
+        ### Will take the real part of the pop_dot to compute gik, 
+        ### so it is a real vector!
+        gik = np.zeros(self.N_basis_states)
+        
+        ''' Update nuclear degrees of freedom first '''
+        #  Hellman-Feynman force
+        F_curr = self.Hellman_Feynman()
+        
+        ### get perturbation of force for Langevin dynamics
+        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+    
+        ### get acceleration
+        ### Langevin acceleration
+        a_curr = (-1 * F_curr + rp_curr) / self.M - self.gamma_nuc * self.V
+        ### bbk update to velocity and position
+        v_halftime = self.V + a_curr * self.dt / 2
+        
+        ### update R
+        self.R = self.R + v_halftime * self.dt
+        
+        ### Hellman-Feynman force at updated geometry 
+        F_fut = self.Hellman_Feynman()
+        
+        ### get new random force 
+        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+        ### get acceleration
+        a_fut = (-1 * F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
+        ### get updated velocity
+        ### vv update
+        ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+        ### bbk update
+        ### updated velocity assuming we are on the same surface
+        self.V = (v_halftime + a_fut * self.dt/2) * (1/(1 + self.gamma_nuc * self.dt/2))
+        
+        ### are we moving forward or backwards?
+        if self.V>0:
+            forward=1
+        else:
+            forward=-1
+        
+        
+        ### Get derivative coupling at updated position!
+        self.Derivative_Coupling(Hprime)
+        
+        ### populations before updates
+        for i in range(0,self.N_basis_states):
+            pop_cur[i] = self.population_polariton[i]
+        
+        ### Update wavefunction
+        self.RK4_NH_SE(self)
+        
+        ### update populations in polariton basis
+        trace = 0.
+        dot_trace = 0.
+        for i in range(1,self.N_basis_states):
+            ci = self.C_polariton[i]
+            pi = np.real(np.conj(ci)*ci)
+            self.population_polariton[i] = pi
+            pop_fut[i] = pi
+            trace += pi
+            pop_dot[i] = (pi - pop_cur[i])/self.dt
+            dot_trace += pop_dot[i]
+        
+        pop_dot[0] = -1*dot_trace
+        pop_fut[0] = 1 - trace
+        self.population_polariton[0] = 1 - trace
+        
+        ''' Edited up to this line here on 3/28/2020... continue working 
+            from this line forward! '''
+    
+        ###  review from here on 3/21/2020 to make sure FSSH is sensible 
+        ### get change in populations in local basis to get hoppin
+        for i in range(0,self.active_index+1):
+            pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
+            ### don't divide by zero!!!
+            if self.population_polariton[self.active_index]>0:
+                g = np.real( pop_dot[i] / self.population_polariton[self.active_index] * self.dt)
+            ### divide by something realllllly small instead!
+            else:
+                g = np.real( pop_dot[i] / 1e-13 * self.dt)
+            if (g<0):
+                g = 0
+                
+            ### Get cumulative probability
+            if (i==0):
+                gik[i] = g
+            else:
+                gik[i] = g + gik[i-1]
+        
+        ### decide if we want to hop to state k, if any
+        thresh = np.random.random(1)
+        ### This logic comes from the conditions in Eq.  (10) on page 4 
+        ### from J. Chem. Phys. 138, 164106 (2013); doi: 10.1063/1.4801519
+        if (self.active_index>1):
+            for i in range(self.active_index-1,0,-1):
+                if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
+                    ### Which direction does dc vector point?
+                    if self.dc[self.active_index,i]<0:
+                        sign = -1
+                    else:
+                        sign = 1
+                    self.active_index = i
+                    switch=1
+        if (self.active_index==1):
+            if (gik[0]>=thresh[0]):
+                ### Which direction does dc vector point?
+                if self.dc[self.active_index,0]<0:
+                    sign = -1
+                else:
+                    sign = 1
+                self.active_index = 0
+                switch=1
+                
+        ### Now that we have considered switching active surfaces, compute D_act
+        ### so that we can get the force on the active surface!
+        D_act = np.outer(self.transformation_vecs_L_to_P[:,self.active_index], 
+                         np.conj(self.transformation_vecs_L_to_P[:,self.active_index]))
+            
+        ''' deleted to hear... '''
+        self.H_e()
+        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+        
+        ### Get total Hamiltonian (maybe non-Hermitian) at new geometry!
+        H_act = np.copy(self.H_total)
+        
+        ### get derivative of Hpl at r_fut
+        
+
+        ### if we switched surfaces, we need to check some things about the
+        ### momentum on the new surface... this comes from consideration of
+        ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
+        ### on Surface Hopping
+        if switch:
+            ### momentum on surface j (starting surface)
+            Pj = self.V*self.M
+            ### This number should always be positive!
+            ### We will discard the imaginary part
+            delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
+            
+            ### speed on surface k (new surface)
+            Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
+            Vk = forward * Vk_mag
+            
+            Pk = self.M * Vk
+            ### First estimate of Delta P
+            Delta_P = Pk - Pj
+        
+            #print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
+            ### We will re-scale the updated momentum so that the following is true: 
+            ### Pj = Pk + deltaP * dc
+            ### if dc vanishes (as will happen for j->0), do not rescale the velocity
+            ### why?  bc these transitions are due to the photon leaving the cavity, 
+            ### and the photon should carry energy away with it so we don't want to conserve energy!
+            if np.isclose(self.dc[starting_act_idx, self.active_index],0+0j):
+                self.V = Pj/self.M
+            elif self.active_index==0:
+                self.V = Pj/self.M
+            ### if derivative coupling is positive, then this hop cannot happen!
+            elif np.real(self.dc[starting_act_idx, self.active_index])>0:
+                self.active_index = starting_act_idx
+                self.V = Pj/self.M
+            ### hops with negative derivative coupling are allowed, rescale the velocity
+            ### appropriately.
+            else:
+                ### Re-scale Delta P with derivative coupling vector
+                scaled_Delta_P = Delta_P / np.real(self.dc[starting_act_idx, self.active_index])
+                ### now compute the re-scaled Pk
+                Pk_rescaled = Pj - scaled_Delta_P
+                ### assign the corresponding re-scaled velocity to self.V
+                self.V = Pk_rescaled / self.M
+                #print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
+                
+                
+                
+        
+        return 1 
+
+    '''
     def FSSH_Update(self):
         ### use this to check if a switch occurs this iteration!
         switch=0
@@ -708,7 +895,7 @@ class polaritonic:
         self.D_polariton[0,0] = 1 - trace
         self.D_local[0,0] = 1 - trace
         
-        ''' review from here on 3/21/2020 to make sure FSSH is sensible '''
+        ###  review from here on 3/21/2020 to make sure FSSH is sensible 
         ### get change in populations in local basis to get hoppin
         for i in range(0,self.active_index+1):
             pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
@@ -805,7 +992,7 @@ class polaritonic:
         ### we are just dropping the imaginary part so that F_fut will
         ### be a float data type not a complex data type!
         
-        ''' note the full force is also real and agrees with Hellman-Feynman force '''
+        # note the full force is also real and agrees with Hellman-Feynman force #
         F_fut = np.real(self.TrHD(Hprime, D_act))
         
         ### get energy at r_fut on active polariton surface...
@@ -874,6 +1061,7 @@ class polaritonic:
                 
         
         return 1
+        '''
 
     ''' Computes derivative coupling matrix in the LOCAL basis... this
         local basis corresponds to the potentially non-Hermitian total Hamiltonian...
