@@ -21,7 +21,7 @@ vi_init = 3.3375e-5
 N_repeats = 1 #int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
 #gamp = float(sys.argv[2]) 
-gamp = 0.1
+gamp = 0.0
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
@@ -39,7 +39,7 @@ au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
 #prefix = sys.argv[5]
-prefix = "g_0.1_test"
+prefix = "g_0.0_test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 ### filename to wrote PES to
@@ -82,6 +82,19 @@ options = {
 
 ### instantiate
 polt = polaritonic(options)
+polt.R = -0.6
+polt.H_e()
+polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
+polt.Transform_L_to_P()
+polt.Derivative_Coupling()
+print("H")
+print(polt.H_polariton)
+print("dc")
+print(polt.dc)
+print("C")
+print(polt.C_polariton)
+print("V")
+print(polt.V)
 
 
 ### Write potential energy surface!
@@ -112,16 +125,11 @@ for j in range(0,N_repeats):
     polt.H_e()
     polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
     polt.Transform_L_to_P()
-    polt.D_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=complex)
+    #polt.C_polariton = np.zeros((polt.N_basis_states,polt.N_basis_states),dtype=complex)
     ### hard-coding this!
-    polt.D_polariton[polt.initial_state,polt.initial_state] = 1+0j
-    polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
-    polt.Energy = polt.TrHD(polt.H_total, polt.D_local)
-    polt.Transform_L_to_P()
-    #print("Polariton")
-    #print(polt.D_polariton)
-    #print("Local")
-    #print(polt.D_local)
+    polt.C_polariton[polt.initial_state] = 1+0j
+    #polt.D_local = np.outer(polt.transformation_vecs_L_to_P[:,polt.initial_state], np.conj(polt.transformation_vecs_L_to_P[:,polt.initial_state])) 
+    polt.Energy = polt.Energy_Expectation(polt.H_polariton, polt.C_polariton)
     
     ### un-comment open files for writing data about electronic and nuclear dynamics
     if N_repeats==1:
@@ -140,7 +148,7 @@ for j in range(0,N_repeats):
     for i in range(1,N_time):
         
         #### Call FSSH update to update nuclear and electronic coordinates
-        polt.FSSH_Update()
+        polt.NH_FSSH()
         
         ### Uncomment if you wish to write trajectory data!
         if N_repeats == 1 and i%500==0:

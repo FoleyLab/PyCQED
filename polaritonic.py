@@ -83,7 +83,7 @@ class polaritonic:
         
         ### Density Matrices
         self.D_local[self.initial_state,self.initial_state] = 1+0j
-        self.C_local[self.initial_state] = 1+0j
+        self.C_polariton[self.initial_state] = 1+0j
         
         
         ### derivative coupling
@@ -566,30 +566,30 @@ class polaritonic:
         self.C1 = np.copy(self.C_polariton)  
         
         ### First partial update
-        self.ck1 = np.copy(-ci * self.dt * np.dot(H,self.C1) - 
+        self.kc1 = np.copy(-ci * self.dt * np.dot(H,self.C1) - 
                            self.dt * self.V * np.dot(d, self.C1))
         
         
 
         ### Update D and get k2
-        self.C2 = np.copy(self.C_polariton+self.ck1/2.)
+        self.C2 = np.copy(self.C_polariton+self.kc1/2.)
         ### Second partial update
-        self.ck2 = np.copy(-ci * self.dt * np.dot(H,self.C2) - 
+        self.kc2 = np.copy(-ci * self.dt * np.dot(H,self.C2) - 
                            self.dt * self.V * np.dot(d, self.C2))
         
         
         ### UPdate D and get k3
-        self.C3 = np.copy(self.C_polariton+self.ck2/2)
-        self.ck3 = np.copy(-ci * self.dt * np.dot(H,self.C3) - 
+        self.C3 = np.copy(self.C_polariton+self.kc2/2)
+        self.kc3 = np.copy(-ci * self.dt * np.dot(H,self.C3) - 
                            self.dt * self.V * np.dot(d, self.C3))
         
         ### Update H and D and get K4
-        self.C4 = np.copy(self.C_polariton+self.ck3)
-        self.ck4 = np.copy(-ci * self.dt * np.dot(H,self.C4) - 
+        self.C4 = np.copy(self.C_polariton+self.kc3)
+        self.kc4 = np.copy(-ci * self.dt * np.dot(H,self.C4) - 
                            self.dt * self.V * np.dot(d, self.C4))
         
         self.C_polariton = np.copy(self.C_polariton + 
-                                   (1/6.)*(self.ck1 + 2.*self.ck2 + 2*self.ck3 + self.ck4))
+                                   (1/6.)*(self.kc1 + 2.*self.kc2 + 2*self.kc3 + self.kc4))
         
         return 1
 
@@ -687,47 +687,43 @@ class polaritonic:
         
         
         ### Get derivative coupling at updated position!
-        self.Derivative_Coupling(Hprime)
+        self.Derivative_Coupling()
         
         ### populations before updates
         for i in range(0,self.N_basis_states):
             pop_cur[i] = self.population_polariton[i]
         
         ### Update wavefunction
-        self.RK4_NH_SE(self)
+        self.RK4_NH_SE()
         
         ### update populations in polariton basis
         trace = 0.
         dot_trace = 0.
         for i in range(1,self.N_basis_states):
-            ci = self.C_polariton[i]
-            pi = np.real(np.conj(ci)*ci)
-            self.population_polariton[i] = pi
-            pop_fut[i] = pi
-            trace += pi
-            pop_dot[i] = (pi - pop_cur[i])/self.dt
+            c_i = self.C_polariton[i]
+            p_i = np.real( np.dot(np.conj(c_i),c_i))
+            self.population_polariton[i] = p_i
+            pop_fut[i] = p_i
+            trace += p_i
+            pop_dot[i] = (p_i - pop_cur[i])/self.dt
             dot_trace += pop_dot[i]
         
         pop_dot[0] = -1*dot_trace
         pop_fut[0] = 1 - trace
         self.population_polariton[0] = 1 - trace
+        #print("population_polariton",self.population_polariton)
         
-        ''' Edited up to this line here on 3/28/2020... continue working 
-            from this line forward! '''
-    
-        ###  review from here on 3/21/2020 to make sure FSSH is sensible 
-        ### get change in populations in local basis to get hoppin
+        ''' Compute probabilities for switching surfaces '''
         for i in range(0,self.active_index+1):
-            pop_dot[i] = np.real(pop_fut[i] - self.population_polariton[i])/self.dt
-            ### don't divide by zero!!!
+            ### if population in the active state is greater than zero, it 
+            ### can go in the denmoniator
             if self.population_polariton[self.active_index]>0:
                 g = np.real( pop_dot[i] / self.population_polariton[self.active_index] * self.dt)
-            ### divide by something realllllly small instead!
+            ### if it is zero, divide by something realllllly small instead!
             else:
                 g = np.real( pop_dot[i] / 1e-13 * self.dt)
             if (g<0):
-                g = 0
-                
+                g = 0          
             ### Get cumulative probability
             if (i==0):
                 gik[i] = g
@@ -758,26 +754,13 @@ class polaritonic:
                 self.active_index = 0
                 switch=1
                 
-        ### Now that we have considered switching active surfaces, compute D_act
-        ### so that we can get the force on the active surface!
-        D_act = np.outer(self.transformation_vecs_L_to_P[:,self.active_index], 
-                         np.conj(self.transformation_vecs_L_to_P[:,self.active_index]))
-            
-        ''' deleted to hear... '''
-        self.H_e()
-        self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         
-        ### Get total Hamiltonian (maybe non-Hermitian) at new geometry!
-        H_act = np.copy(self.H_total)
-        
-        ### get derivative of Hpl at r_fut
-        
-
         ### if we switched surfaces, we need to check some things about the
         ### momentum on the new surface... this comes from consideration of
         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
         ### on Surface Hopping
-        if switch:
+        ''' skip this for now! '''
+        if 0: #switch:
             ### momentum on surface j (starting surface)
             Pj = self.V*self.M
             ### This number should always be positive!
@@ -816,9 +799,7 @@ class polaritonic:
                 ### assign the corresponding re-scaled velocity to self.V
                 self.V = Pk_rescaled / self.M
                 #print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
-                
-                
-                
+                         
         
         return 1 
 
@@ -1097,6 +1078,8 @@ class polaritonic:
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
         self.Transform_L_to_P()
         c = self.transformation_vecs_L_to_P[:,self.active_index]
+        ### update energy attribute while we are at it!
+        self.Energy = self.polariton_energies[self.active_index]
         cs = np.conj(c)
         
         ### get dH/dR
@@ -1112,6 +1095,16 @@ class polaritonic:
         tmp = np.dot(Hp, c)
         F = -1*np.dot(cs,tmp)
         return F
+    
+    ''' Compute energy expectation value for a given Hamiltonian and c-vector '''
+    def Energy_Expectation(self, H, c):
+        ct = np.conj(c)
+        Hc = np.dot(H, c)
+        num = np.dot(ct, Hc)
+        den = np.dot(ct, c)
+        #print(num)
+        #print(den)
+        return num/den
         
         
         
@@ -1142,8 +1135,8 @@ class polaritonic:
         self.Transform_L_to_P()
 
         
-        for j in range(1,2): #self.N_basis_states):
-            for k in range(2,3): #self.N_basis_states):
+        for j in range(0, self.N_basis_states): #self.N_basis_states):
+            for k in range(0, self.N_basis_states): #self.N_basis_states):
                 if j!=k:
                     Vjj = self.polariton_energies[j]
                     Vkk = self.polariton_energies[k]
@@ -1152,6 +1145,7 @@ class polaritonic:
                     tmp = np.dot(Hp, ck)
                     Fjk = -1*np.dot(np.conj(cj), tmp)
                     self.dc[j,k] = Fjk/(Vkk-Vjj)
+                    self.Delta_V_jk[j,k] = Vjj-Vkk
         return 1
         
     
@@ -1247,13 +1241,16 @@ class polaritonic:
         n_str = " "
         e_str = e_str + str(step*self.dt) + " "
         n_str = n_str + str(step*self.dt) + " "
-        n_str = n_str + str(self.R) + " " + str(self.Energy)
+        n_str = n_str + str(np.real(self.R)) + " " + str(np.real(self.Energy)) + " " 
+        n_str = n_str + str(np.real(self.V)) + " " 
         
-        for j in range(0,self.N_basis_states):
-            e_str = e_str + str(np.real(self.D_local[j,j])) + " "
+        #for j in range(0,self.N_basis_states):
+        #    e_str = e_str + str(np.real(self.D_local[j,j])) + " "
             
         for j in range(0,self.N_basis_states):
-            e_str = e_str + str(np.real(self.D_polariton[j,j])) + " "
+            e_str = e_str + str(np.real(self.population_polariton[j])) + " "
+            #e_str = e_str + str(np.real(self.C_polariton[j])) + " " 
+            #e_str = e_str + str(np.imag(self.C_polariton[j])) + " "
             
         e_str = e_str + "\n"
         n_str = n_str + "\n"

@@ -167,7 +167,39 @@ def H_Interaction(Psi, g):
                     Hp[i][j] = Hp[i][j] + t2
     
     return Hp
+
+def RK4_NH_SE(H, C, h, V, dc, t):
+    ci = 0+1j
+    k1 = np.zeros_like(C)
+    k2 = np.zeros_like(C)
+    k3 = np.zeros_like(C)
+    k4 = np.zeros_like(C)
+    C1 = np.zeros_like(C)
+    C2 = np.zeros_like(C)
+    C3 = np.zeros_like(C)
+    C4 = np.zeros_like(C)
     
+    C1 = np.copy(C)    
+    k1 = np.copy(-ci * h * np.dot(H, C1) - h * V * np.dot(dc, C1))
+    
+    C2 = np.copy(C+k1/2.)
+    k2 = np.copy(-ci * h * np.dot(H, C2) - h * V * np.dot(dc, C2))
+    #k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
+    
+    ### UPdate H and D and get k3
+    C3 = np.copy(C+k2/2)
+    k3 = np.copy(-ci * h * np.dot(H, C3) - h * V * np.dot(dc, C3))
+    #k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
+    
+    ### Update H and D and get K4
+    C4 = np.copy(C+k3)
+    k4 = np.copy(-ci * h * np.dot(H, C4) - h * V * np.dot(dc, C4))
+    #k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
+    
+    Cf = np.copy(C + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4))
+    
+    return Cf
+
 def RK4(H, D, h, t):
     ci = 0+1j
     k1 = np.zeros_like(D)
@@ -184,24 +216,24 @@ def RK4(H, D, h, t):
     G1 = np.copy(np.imag(H))
     
     D1 = np.copy(D)    
-    k1 = h*DDot(H1,D1)  + h*(np.dot(G1,D1) + np.dot(D1,G1)) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
+    k1 = np.copy(h*DDot(H1,D1)  + h*(np.dot(G1,D1) + np.dot(D1,G1))) # h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
     #k1 = h*DDot(H1, D1) + h*L_Diss(D1, gamma) + h*L_Deph(D1, gam_deph)
     ### Update H and D and get k2
     H2 = np.copy(H)
     D2 = np.copy(D+k1/2.)
-    k2 = h*DDot(H1,D2)  + h*(np.dot(G1,D2) + np.dot(D2,G1))
+    k2 = np.copy(h*DDot(H1,D2)  + h*(np.dot(G1,D2) + np.dot(D2,G1)))
     #k2 = h*DDot(H2, D2) + h*L_Diss(D2, gamma) + h*L_Deph(D2, gam_deph)
     
     ### UPdate H and D and get k3
     H3 = np.copy(H2)
     D3 = np.copy(D+k2/2)
-    k3 = h*DDot(H1,D3)  + h*(np.dot(G1,D3) + np.dot(D3,G1))
+    k3 = np.copy(h*DDot(H1,D3)  + h*(np.dot(G1,D3) + np.dot(D3,G1)))
     #k3 = h*DDot(H3, D3) + h*L_Diss(D3, gamma) + h*L_Deph(D3, gam_deph)
     
     ### Update H and D and get K4
     H4 = np.copy(H)
     D4 = np.copy(D+k3)
-    k4 = h*DDot(H1,D4)  + h*(np.dot(G1,D4) + np.dot(D4,G1))
+    k4 = np.copy(h*DDot(H1,D4)  + h*(np.dot(G1,D4) + np.dot(D4,G1)))
     #k4 = h*DDot(H4, D4) + h*L_Diss(D4, gamma) + h*L_Deph(D4, gam_deph)
     
     Df = np.copy(D + (1/6.)*(k1 + 2.*k2 + 2*k3 + k4))
@@ -247,7 +279,7 @@ Hdiag = Transform(v, Htot)
 print(Hdiag)
 
 
-Ntime = 10000
+Ntime = 100000
 p1 = np.zeros(Ntime,dtype=complex)
 p2 = np.zeros(Ntime,dtype=complex)
 p3 = np.zeros(Ntime,dtype=complex)
@@ -268,7 +300,7 @@ Psi = np.zeros(4, dtype=complex)
 #Psi[1] = np.sqrt(2/6)
 #Psi[2] = np.sqrt(3/6)
 #Psi[3] = np.sqrt(1/6)
-Psi[1] = np.sqrt(1.)
+#Psi[1] = np.sqrt(1.)
 #Psi[2] = np.sqrt(1./3)
 #Psi[3] = np.sqrt(1.)
 '''
@@ -276,8 +308,8 @@ Psi[1] = np.sqrt(1.)
 print(Psi)
 
 #Psi[0] = np.sqrt(0.5/7)+0j
-Psi[1] =np.sqrt(1/4)+0j
-Psi[2] = np.sqrt(3/4)+0j
+#Psi[1] =np.sqrt(1/4)+0j
+Psi[2] = np.sqrt(1)+0j
 #Psi[3] = np.sqrt(3.0/7)+0j
 
 #Psi[4] = np.sqrt(3.5/10)+0j
@@ -293,25 +325,41 @@ rho_1 = Form_Rho(bra_1)
 # Should diagonalize and show populations in diagonalized basis
 #    to see if dynamics are dramatically different 
 #
-print(D[0,0])
-print(D[1,1])
-print(D[2,2])
-print(D[3,3])
+
+V = 3.207337830262267e-05
+Htot = np.array([[ 8.31270428e-02+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+  -1.62630326e-19+0.j],
+ [ 0.00000000e+00+0.j,  1.72735963e-01+0.j,  2.77555756e-17+0.j,
+   0.00000000e+00+0.j],
+ [ 0.00000000e+00+0.j, -1.38777878e-17+0.j,  1.74420026e-01+0.j,
+   0.00000000e+00+0.j],
+ [ 2.16840434e-19+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+   2.64028946e-01+0.j]])
+dc = np.array([[ 0.00000000e+00+0.j,  0.00000000e+00+0.j,  0.00000000e+00+0.j,
+  -1.58222578e-03+0.j],
+ [ 0.00000000e+00-0.j,  0.00000000e+00+0.j, -1.82573787e+01+0.j,
+   0.00000000e+00+0.j],
+ [ 0.00000000e+00-0.j,  1.82573787e+01-0.j,  0.00000000e+00+0.j,
+   0.00000000e+00+0.j],
+ [ 1.58222578e-03-0.j,  0.00000000e+00-0.j,  0.00000000e+00-0.j,
+   0.00000000e+00+0.j]])
+    
+''' DENSITY MATRIX PROPAGATION '''
 for i in range(0,Ntime):
     Dp1 = RK4(Htot, D, dt, i*dt)
     t[i] = dt*i
-    p1[i] = Dp1[0,0]
-    p2[i] = Dp1[1,1]
-    p3[i] = Dp1[2,2]
-    p4[i] = Dp1[3,3]
+    pd1[i] = Dp1[0,0]
+    pd2[i] = Dp1[1,1]
+    pd3[i] = Dp1[2,2]
+    pd4[i] = Dp1[3,3]
  #   p5[i] = Dp1[4][4]
  #   p6[i] = Dp1[5][5]
     D = Dp1
-    DD = Transform(v, Dp1)
-    pd1[i] = DD[0,0]
-    pd2[i] = DD[1,1]
-    pd3[i] = DD[2,2]
-    pd4[i] = DD[3,3]
+    #DD = Transform(v, Dp1)
+    #pd1[i] = DD[0,0]
+    #pd2[i] = DD[1,1]
+    #pd3[i] = DD[2,2]
+    #pd4[i] = DD[2,2]
     #print(t[i],np.real(p1[i]),np.real(p2[i]),np.real(p3[i]),np.real(p4[i]),np.real(pd1[i]),np.real(pd2[i]),np.real(pd3[i]),np.real(pd4[i]))
 #    pd5[i] = DD[4][4]
 #    pd6[i] = DD[5][5]
@@ -319,9 +367,23 @@ for i in range(0,Ntime):
     ##print(np.real(trp))
 
 
-plt.plot(t, np.real(p1), 'pink', t, np.real(p2), 'red', t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+''' Wavefunction propagation '''
+for i in range(0,Ntime):
+    Psip1 = RK4_NH_SE(Htot, Psi, dt, V, dc, i*dt)
+    t[i] = dt*i
+    Psi = np.copy(Psip1)
+    DD = Form_Rho(Psi)
+    
+    p1[i] = DD[0,0]
+    p2[i] = DD[1,1]
+    p3[i] = DD[2,2]
+    p4[i] = DD[3,3]
+
+plt.plot(t, np.real(p3), 'black', t, np.real(pd3), 'r--') #, t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
 #plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
+plt.ylim(0,1.2)
 plt.show()
+
 
 print(np.real(p2))
 #print(Dp1[0,0])
