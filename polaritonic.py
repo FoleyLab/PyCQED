@@ -658,7 +658,7 @@ class polaritonic:
     
         ### get acceleration
         ### Langevin acceleration
-        a_curr = (-1 * F_curr + rp_curr) / self.M - self.gamma_nuc * self.V
+        a_curr = (F_curr + rp_curr) / self.M - self.gamma_nuc * self.V
         ### bbk update to velocity and position
         v_halftime = self.V + a_curr * self.dt / 2
         
@@ -671,7 +671,7 @@ class polaritonic:
         ### get new random force 
         rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
         ### get acceleration
-        a_fut = (-1 * F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
+        a_fut = (F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
         ### get updated velocity
         ### vv update
         ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
