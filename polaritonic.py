@@ -1265,6 +1265,7 @@ class polaritonic:
         derivative coupling vectors for 3->2 and writes to file. '''
     def Write_Forces(self, prefix):
         
+        init_active_index = self.active_index
         hf_file = open(prefix, "w")
         rlist = np.linspace(-0.75,  -0.50, 500)
         
@@ -1272,75 +1273,27 @@ class polaritonic:
             wr_str = " "
             self.R = rlist[r]
             wr_str = wr_str + str(self.R) + " "
-            ### update electronic Hamiltonian
-            self.H_e()
-            ### update total Hamiltonian with complex photonic contribution
-            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-            self.Transform_L_to_P()
             
-            D_33 = np.outer(self.transformation_vecs_L_to_P[:,2], 
-                             np.conj(self.transformation_vecs_L_to_P[:,2]))
-            D_22 = np.outer(self.transformation_vecs_L_to_P[:,1], 
-                             np.conj(self.transformation_vecs_L_to_P[:,1]))
-            
-            ### Get dH/dR in local basis
-            self.R = self.R + self.dr
-            self.H_e()
-            Hf = np.copy(self.H_electronic) # + self.H_photonic + self.H_interaction)
-            ### update Density Matrix to forward R
-            self.Transform_L_to_P()
-            Df_33 = np.outer(self.transformation_vecs_L_to_P[:,2], 
-                             np.conj(self.transformation_vecs_L_to_P[:,2]))
-            Df_22 = np.outer(self.transformation_vecs_L_to_P[:,1], 
-                             np.conj(self.transformation_vecs_L_to_P[:,1]))
-            
-            self.R = self.R - 2*self.dr
-            self.H_e()
-            Hb = np.copy(self.H_electronic) # + self.H_photonic + self.H_interaction)
-            ### update Density Matrix to backward R
-            self.Transform_L_to_P()
-            Db_33 = np.outer(self.transformation_vecs_L_to_P[:,2], 
-                             np.conj(self.transformation_vecs_L_to_P[:,2]))
-            Db_22 = np.outer(self.transformation_vecs_L_to_P[:,1], 
-                             np.conj(self.transformation_vecs_L_to_P[:,1]))
-            
-            Hprime = np.copy((Hf-Hb)/(2*self.dr))
-            
-            ### go back to r_curr
-            self.R = self.R + self.dr
-            
-            ### Get total Hamiltonian at current position
-            self.H_e()
-            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-            ### reset density matrix to r_cur
-            self.Transform_L_to_P()
             
             ### Get derivative coupling at current position... 
-            ### Note transformation vecs are still at current value of self.R,
-            ### they were not recomputed at any displaced values
-            self.Derivative_Coupling(Hprime)
+            self.Derivative_Coupling()
             
+            ### Get Hellman-Feynman force on surface Phi_3
+            self.active_index = 2
             ### Hellman-Feynman Forces
-            F_33 = self.TrHD(Hprime, D_33)
-            F_22 = self.TrHD(Hprime, D_22)
+            F_33 = self.Hellman_Feynman()
+            ### Get Hellman-Feynman force on surface Phi_2
+            self.active_index = 3
+            F_22 = self.Hellman_Feynman()
             
-            ### Full numeric derivatives
-            ### Energies at displaced geometries
-            Ef_33 = self.TrHD(Hf, Df_33)
-            Ef_22 = self.TrHD(Hf, Df_22)
-            Eb_33 = self.TrHD(Hb, Db_33)
-            Eb_22 = self.TrHD(Hb, Db_22)
-            ### Forces
-            Ff_33 = (Ef_33-Eb_33)/(2*self.dr)
-            Ff_22 = (Ef_22-Eb_22)/(2*self.dr)
             
             d_32 = self.dc[2,1]
             
-            wr_str = wr_str + str(F_22) + " " + str(F_33) + " " + str(d_32) + " " + str(Ff_22) + " " + str(Ff_33) + "\n"
+            wr_str = wr_str + str(F_22) + " " + str(F_33) + " " + str(d_32) + "\n"
             hf_file.write(wr_str)
         
         
-        
+        self.active_index = init_active_index 
         hf_file.close()
         return 1
     

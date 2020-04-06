@@ -18,28 +18,28 @@ ri_init = -0.66156
 vi_init = 3.3375e-5
 
 ### Number of repeates
-N_repeats = int(sys.argv[1])
+N_repeats = 1 #int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[2]) 
-#gamp = 100.0
+#gamp = float(sys.argv[2]) 
+gamp = 100.0
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = float(sys.argv[3])
-#omp = 2.45
+#omp = float(sys.argv[3])
+omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[4])
-#gp = 0.02
+#gp = float(sys.argv[4])
+gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[5]
-#prefix = "g_100.0_test"
+#prefix = sys.argv[5]
+prefix = "g_100.0_test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 ### filename to wrote PES to
@@ -53,7 +53,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 4000000
+N_time = 200000
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
