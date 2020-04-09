@@ -319,9 +319,9 @@ class polaritonic:
             cval = 0+0j
             for j in range(1,self.NPhoton+1):
                 if self.local_basis[i,j] == 0:
-                    cval = cval + 0.5 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
+                    cval = cval + 0.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
                 elif self.local_basis[i,j] == 1:
-                    cval = cval + 1.5 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
+                    cval = cval + 1.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
             self.H_photonic[i,i] = cval            
             
         return 1

@@ -21,7 +21,7 @@ vi_init = 3.3375e-5
 N_repeats = 1 #int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
 #gamp = float(sys.argv[2]) 
-gamp = 100.0
+gamp = 10.0
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
@@ -53,7 +53,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 200000
+N_time = 2
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -87,14 +87,14 @@ polt.H_e()
 polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
 polt.Transform_L_to_P()
 polt.Derivative_Coupling()
-print("H")
+
+print("H_pol")
 print(polt.H_polariton)
+
 print("dc")
 print(polt.dc)
-print("C")
-print(polt.C_polariton)
-print("V")
-print(polt.V)
+#print("H_loc")
+#print(np.imag(polt.H_total))
 
 
 ### Write potential energy surface!
@@ -181,4 +181,3 @@ if N_repeats==1:
     electronic_file.close()
     nuclear_file.close()
     
-
