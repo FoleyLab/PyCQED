@@ -319,9 +319,9 @@ class polaritonic:
             cval = 0+0j
             for j in range(1,self.NPhoton+1):
                 if self.local_basis[i,j] == 0:
-                    cval = cval + 0.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
+                    cval = cval + 0.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1]/2.)
                 elif self.local_basis[i,j] == 1:
-                    cval = cval + 1.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1])
+                    cval = cval + 1.0 * (self.omc[j-1] - ci * self.gamma_photon[j-1]/2.)
             self.H_photonic[i,i] = cval            
             
         return 1
@@ -724,35 +724,31 @@ class polaritonic:
                 g = np.real( pop_dot[i] / 1e-13 * self.dt)
             if (g<0):
                 g = 0          
-            ### Get cumulative probability
-            if (i==0):
-                gik[i] = g
-            else:
-                gik[i] = g + gik[i-1]
+            
+            gik[i] = g
         
         ### decide if we want to hop to state k, if any
         thresh = np.random.random(1)
-        ### This logic comes from the conditions in Eq.  (10) on page 4 
+        ### this logic comes from the conditions in Eq.  (10) on page 4 
         ### from J. Chem. Phys. 138, 164106 (2013); doi: 10.1063/1.4801519
         if (self.active_index>1):
-            for i in range(self.active_index-1,0,-1):
-                if (gik[i]>=thresh[0] and gik[i-1]<thresh[0]):
-                    ### Which direction does dc vector point?
-                    if self.dc[self.active_index,i]<0:
-                        sign = -1
-                    else:
-                        sign = 1
-                    self.active_index = i
-                    switch=1
-        if (self.active_index==1):
-            if (gik[0]>=thresh[0]):
-                ### Which direction does dc vector point?
-                if self.dc[self.active_index,0]<0:
-                    sign = -1
-                else:
-                    sign = 1
-                self.active_index = 0
+            
+            P = np.argsort(gik)
+            
+            #### is the smallest probability greater than the threshol?
+            if gik[P[0]]>thresh:
+                self.active_index = P[0]
                 switch=1
+            elif (gik[P[0]]+P[1])>thresh:
+                self.active_index = P[1]
+                switch=1
+        ### only one relevant probability      
+        elif (self.active_index==1):
+            if gik[0]>thresh:
+                self.active_index = 0
+                switch = 1
+        else:
+            switch = 0
                 
         
         ### if we switched surfaces, we need to check some things about the

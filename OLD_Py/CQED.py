@@ -284,77 +284,85 @@ p1 = np.zeros(Ntime,dtype=complex)
 p2 = np.zeros(Ntime,dtype=complex)
 p3 = np.zeros(Ntime,dtype=complex)
 p4 = np.zeros(Ntime,dtype=complex)
-#p5 = np.zeros(Ntime,dtype=complex)
-#p6 = np.zeros(Ntime,dtype=complex)
-pd1 = np.zeros(Ntime,dtype=complex)
-pd2 = np.zeros(Ntime,dtype=complex)
-pd3 = np.zeros(Ntime,dtype=complex)
-pd4 = np.zeros(Ntime,dtype=complex)
-#pd5 = np.zeros(Ntime,dtype=complex)
-#pd6 = np.zeros(Ntime,dtype=complex)
+
+p1zp = np.zeros(Ntime,dtype=complex)
+p2zp = np.zeros(Ntime,dtype=complex)
+p3zp = np.zeros(Ntime,dtype=complex)
+p4zp = np.zeros(Ntime,dtype=complex)
+
 t = np.zeros(Ntime)
 
 Psi = np.zeros(4, dtype=complex)
+Psi_zp = np.zeros_like(Psi)
 
-#Psi = np.sqrt(1/4)*v[0]+np.sqrt(1/4)*v[1]+np.sqrt(1/4)*v[2] + np.sqrt(1/4)*v[3]
-#Psi[1] = np.sqrt(2/6)
-#Psi[2] = np.sqrt(3/6)
-#Psi[3] = np.sqrt(1/6)
-#Psi[1] = np.sqrt(1.)
-#Psi[2] = np.sqrt(1./3)
-#Psi[3] = np.sqrt(1.)
-'''
-'''
+
 print(Psi)
 
-#Psi[0] = np.sqrt(0.5/7)+0j
-#Psi[1] =np.sqrt(1/4)+0j
-Psi[2] = np.sqrt(1)+0j
-#Psi[3] = np.sqrt(3.0/7)+0j
 
-#Psi[4] = np.sqrt(3.5/10)+0j
-#Psi[5] = np.sqrt(1./10)+0j
-'''
+Psi[2] = np.sqrt(1)+0j
+Psi_zp[2] = np.sqrt(1)+0j
+
 '''
 D = Form_Rho(Psi)
 
 bra_1 = CreateBas(4, 1)
 
 rho_1 = Form_Rho(bra_1)
+'''
 
 # Should diagonalize and show populations in diagonalized basis
 #    to see if dynamics are dramatically different 
 #
 
 V = 3.207337830262267e-05
-Htot = np.array([[ 8.31270428e-02-1.83755286e-04j,  0.00000000e+00+0.00000000e+00j,
-   0.00000000e+00+0.00000000e+00j, -2.16840434e-19-5.55865372e-22j],
- [ 0.00000000e+00+0.00000000e+00j,  1.72751200e-01-4.58806439e-04j,
-   1.38777878e-17+0.00000000e+00j,  0.00000000e+00+0.00000000e+00j],
- [ 0.00000000e+00+0.00000000e+00j, -4.16333634e-17+1.04083409e-17j,
-   1.74404789e-01-2.76190437e-04j,  0.00000000e+00+0.00000000e+00j],
- [ 2.16840434e-19+1.32348898e-22j,  0.00000000e+00+0.00000000e+00j,
-   0.00000000e+00+0.00000000e+00j,  2.64028946e-01-5.51241591e-04j]])
+
+Htot = np.array([[ 3.81084841e-02-3.03331099e-09j,  0.00000000e+00+0.00000000e+00j,
+   0.00000000e+00+0.00000000e+00j,  0.00000000e+00-1.05879118e-22j],
+ [ 0.00000000e+00+0.00000000e+00j,  1.27721221e-01-1.36906639e-04j,
+   0.00000000e+00+8.67361738e-19j,  0.00000000e+00+0.00000000e+00j],
+ [ 0.00000000e+00+0.00000000e+00j,  2.77555756e-17+8.67361738e-19j,
+   1.29397650e-01-4.68425806e-05j,  0.00000000e+00+0.00000000e+00j],
+ [-2.16840434e-19-7.94093388e-23j,  0.00000000e+00+0.00000000e+00j,
+   0.00000000e+00+0.00000000e+00j,  2.19010387e-01-1.83746186e-04j]])
 dc = np.array([[ 0.00000000e+00+0.00000000e+00j, -0.00000000e+00+0.00000000e+00j,
-  -0.00000000e+00+0.00000000e+00j, -1.58221366e-03-2.74817095e-06j],
+  -0.00000000e+00+0.00000000e+00j, -1.58222275e-03-1.37409398e-06j],
  [ 0.00000000e+00-0.00000000e+00j,  0.00000000e+00+0.00000000e+00j,
-  -1.78911912e+01+1.39445886e+00j, -0.00000000e+00+0.00000000e+00j],
- [ 0.00000000e+00-0.00000000e+00j,  1.77643289e+01-2.54319753e+00j,
+  -1.81684114e+01+6.86804157e-01j, -0.00000000e+00+0.00000000e+00j],
+ [ 0.00000000e+00-0.00000000e+00j,  1.81374193e+01-1.26368155e+00j,
    0.00000000e+00+0.00000000e+00j, -0.00000000e+00+0.00000000e+00j],
- [ 1.58221177e-03+3.68008098e-06j,  0.00000000e+00-0.00000000e+00j,
+ [ 1.58222227e-03+1.84005188e-06j,  0.00000000e+00-0.00000000e+00j,
    0.00000000e+00-0.00000000e+00j,  0.00000000e+00+0.00000000e+00j]])
+ 
+Htot_zp = np.array([[ 8.31270428e-02-9.18776428e-05j,  0.00000000e+00+0.00000000e+00j,
+   0.00000000e+00+0.00000000e+00j, -1.08420217e-19+5.29395592e-23j],
+ [ 0.00000000e+00+0.00000000e+00j,  1.72739780e-01-2.28781248e-04j,
+   1.38777878e-17-1.73472348e-18j,  0.00000000e+00+0.00000000e+00j],
+ [ 0.00000000e+00+0.00000000e+00j,  0.00000000e+00-4.33680869e-18j,
+   1.74416209e-01-1.38717190e-04j,  0.00000000e+00+0.00000000e+00j],
+ [ 0.00000000e+00-8.60267837e-23j,  0.00000000e+00+0.00000000e+00j,
+   0.00000000e+00+0.00000000e+00j,  2.64028946e-01-2.75620795e-04j]])
+ 
+dc_zp = np.array([[ 0.00000000e+00+0.00000000e+00j, -0.00000000e+00+0.00000000e+00j,
+  -0.00000000e+00+0.00000000e+00j, -1.58222275e-03-1.37409398e-06j],
+ [ 0.00000000e+00-0.00000000e+00j,  0.00000000e+00+0.00000000e+00j,
+  -1.81684114e+01+6.86804157e-01j, -0.00000000e+00+0.00000000e+00j],
+ [ 0.00000000e+00-0.00000000e+00j,  1.81374193e+01-1.26368155e+00j,
+   0.00000000e+00+0.00000000e+00j, -0.00000000e+00+0.00000000e+00j],
+ [ 1.58222227e-03+1.84005188e-06j,  0.00000000e+00-0.00000000e+00j,
+   0.00000000e+00-0.00000000e+00j,  0.00000000e+00+0.00000000e+00j]])
+
     
 ''' DENSITY MATRIX PROPAGATION '''
-for i in range(0,Ntime):
-    Dp1 = RK4(Htot, D, dt, i*dt)
-    t[i] = dt*i
-    pd1[i] = Dp1[0,0]
-    pd2[i] = Dp1[1,1]
-    pd3[i] = Dp1[2,2]
-    pd4[i] = Dp1[3,3]
+#for i in range(0,Ntime):
+#    Dp1 = RK4(Htot, D, dt, i*dt)
+#    t[i] = dt*i
+#    pd1[i] = Dp1[0,0]
+#    pd2[i] = Dp1[1,1]
+#    pd3[i] = Dp1[2,2]
+#    pd4[i] = Dp1[3,3]
  #   p5[i] = Dp1[4][4]
  #   p6[i] = Dp1[5][5]
-    D = Dp1
+#    D = Dp1
     #DD = Transform(v, Dp1)
     #pd1[i] = DD[0,0]
     #pd2[i] = DD[1,1]
@@ -378,8 +386,16 @@ for i in range(0,Ntime):
     p2[i] = DD[1,1]
     p3[i] = DD[2,2]
     p4[i] = DD[3,3]
+    
+    Psizpp1 = RK4_NH_SE(Htot_zp, Psi_zp, dt, V, dc_zp, i*dt)
+    Psi_zp = np.copy(Psizpp1)
+    DDzp = Form_Rho(Psi_zp)
+    p1zp[i] = DDzp[0,0]
+    p2zp[i] = DDzp[1,1]
+    p3zp[i] = DDzp[2,2]
+    p4zp[i] = DDzp[3,2]
 
-plt.plot(t, np.real(p3), 'black', t, np.real(pd3), 'r--') #, t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+plt.plot(t, np.real(p2), 'black', t, np.real(p2zp), 'r--') #, t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
 #plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
 plt.ylim(0,1.2)
 plt.show()

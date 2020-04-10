@@ -23,7 +23,7 @@ N_repeats = 1 #int(sys.argv[1])
 #gamp = float(sys.argv[2]) 
 gamp = 10.0
 ### convert to a.u.
-gam_diss_np = gamp * 1e-3 / 27.211
+gam_diss_np = gamp * 1e-3 / (2 * 27.211 )
 
 ### photonic mode energy in eV
 #omp = float(sys.argv[3])
