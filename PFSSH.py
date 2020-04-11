@@ -87,14 +87,14 @@ polt.H_e()
 polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
 polt.Transform_L_to_P()
 polt.Derivative_Coupling()
-print("H")
-print(polt.H_polariton)
-print("dc")
-print(polt.dc)
-print("C")
-print(polt.C_polariton)
-print("V")
-print(polt.V)
+#print("H")
+#print(polt.H_polariton)
+#print("dc")
+#print(polt.dc)
+#print("C")
+#print(polt.C_polariton)
+#print("V")
+#print(polt.V)
 
 
 ### Write potential energy surface!
@@ -115,7 +115,7 @@ for j in range(0,N_repeats):
     ri_init = polt.R
     vi_init = polt.V
     
-    polt.active_index = polt.initial_state
+    polt.active_index = 2 #polt.initial_state
     
     ### uncomment if you wish to print the initial conditions
     #print("  Initial Position is ",polt.R)

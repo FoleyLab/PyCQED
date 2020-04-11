@@ -731,16 +731,14 @@ class polaritonic:
         thresh = np.random.random(1)
         ### this logic comes from the conditions in Eq.  (10) on page 4 
         ### from J. Chem. Phys. 138, 164106 (2013); doi: 10.1063/1.4801519
-        if (self.active_index>1):
-            
-            P = np.argsort(gik)
+        if (self.active_index==2):
             
             #### is the smallest probability greater than the threshol?
-            if gik[P[0]]>thresh:
-                self.active_index = P[0]
+            if gik[0]>thresh:
+                self.active_index = 0
                 switch=1
-            elif (gik[P[0]]+P[1])>thresh:
-                self.active_index = P[1]
+            elif (gik[0]+gik[1])>thresh:
+                self.active_index = 1
                 switch=1
         ### only one relevant probability      
         elif (self.active_index==1):
