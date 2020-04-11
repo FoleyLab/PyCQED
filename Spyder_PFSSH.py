@@ -53,7 +53,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 2
+N_time = 200
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -116,6 +116,7 @@ for j in range(0,N_repeats):
     vi_init = polt.V
     
     polt.active_index = polt.initial_state
+    print(polt.initial_state)
     
     ### uncomment if you wish to print the initial conditions
     #print("  Initial Position is ",polt.R)

@@ -714,7 +714,7 @@ class polaritonic:
         #print("population_polariton",self.population_polariton)
         
         ''' Compute probabilities for switching surfaces '''
-        for i in range(0,self.active_index+1):
+        for i in range(0,self.active_index):
             ### if population in the active state is greater than zero, it 
             ### can go in the denmoniator
             if self.population_polariton[self.active_index]>0:
