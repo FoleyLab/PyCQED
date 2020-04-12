@@ -24,9 +24,9 @@ ci = 0+1j
 print(" What is the prefix for your data files?")
 prefix = input()
 
-r_of_t = np.zeros((16,3000))
-t_of_t = np.zeros(3000)
-e_of_t = np.zeros((16,3000))
+r_of_t = np.zeros((15,8000))
+t_of_t = np.zeros(8000)
+e_of_t = np.zeros((15,8000))
 for i in range(1,16):
     file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
     #file_path = "Data/test_gam_5.0_meV_nuc_traj.txt"
@@ -34,9 +34,9 @@ for i in range(1,16):
     a = np.loadtxt(file_path,dtype=complex)
     #print(len(a[:,0]))
     
-    t_of_t[:] = np.real(a[0:3000,0])
-    r_of_t[i-1,:] = np.real(a[0:3000,1])
-    e_of_t[i-1,:] = np.abs(a[0:3000,2])
+    t_of_t[:] = np.real(a[:,0])
+    r_of_t[i-1,:] = np.real(a[:,1])
+    e_of_t[i-1,:] = np.abs(a[:,2])
 
 dt = 0.12
 
@@ -54,7 +54,7 @@ PPES[:,3] = np.abs(b[:,4])
 '''
 '''
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 6.5))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(-0.8, 5.5))
 #ax.grid()
 
 ### these are the different curves/points that will be plotted

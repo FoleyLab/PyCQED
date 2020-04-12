@@ -351,6 +351,7 @@ dc_zp = np.array([[ 0.00000000e+00+0.00000000e+00j, -0.00000000e+00+0.00000000e+
  [ 1.58222227e-03+1.84005188e-06j,  0.00000000e+00-0.00000000e+00j,
    0.00000000e+00-0.00000000e+00j,  0.00000000e+00+0.00000000e+00j]])
 
+
     
 ''' DENSITY MATRIX PROPAGATION '''
 #for i in range(0,Ntime):
@@ -382,26 +383,36 @@ for i in range(0,Ntime):
     Psi = np.copy(Psip1)
     DD = Form_Rho(Psi)
     
-    p1[i] = DD[0,0]
+    p1[i] = 1-DD[2,2]-DD[1,1]
     p2[i] = DD[1,1]
     p3[i] = DD[2,2]
     p4[i] = DD[3,3]
     
-    Psizpp1 = RK4_NH_SE(Htot_zp, Psi_zp, dt, V, dc_zp, i*dt)
+    '''Psizpp1 = RK4_NH_SE(Htot_zp, Psi_zp, dt, V, dc_zp, i*dt)
     Psi_zp = np.copy(Psizpp1)
     DDzp = Form_Rho(Psi_zp)
-    p1zp[i] = DDzp[0,0]
+    p1zp[i] = 1-DDzp[2,2]-DDzp[1,1]
     p2zp[i] = DDzp[1,1]
     p3zp[i] = DDzp[2,2]
-    p4zp[i] = DDzp[3,2]
+    p4zp[i] = DDzp[3,2]'''
 
-plt.plot(t, np.real(p2), 'black', t, np.real(p2zp), 'r--') #, t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
+plt.plot(t*2.4188e-17 * 1e12, np.real(p3), 'black') #, t, np.real(p3), 'blue') # t, np.real(p5), 'purple', t, np.real(p6), 'orange')
 #plt.plot(t, np.real(pd1), 'black', t, np.real(pd2), 'r--', t, np.real(pd3), 'blue', t, np.real(pd4), 'g--') # t, np.real(pd5), 'purple', t, np.real(pd6), 'orange')
-plt.ylim(0,1.2)
+#plt.ylim(0,0.632)
 plt.show()
 
+gam = 10.
 
-print(np.real(p2))
+### gamma in atomic units
+gam_diss_np = gam * 1e-3 / (27.211 )
+
+### tau in atomic units
+tau_au = 1/gam_diss_np
+
+### tau in picoseconds
+tau_ps = tau_au * 2.4188e-17 * 1e12
+print(tau_ps)
+
 #print(Dp1[0,0])
 #print(Dp1[1,1])
 #print(Dp1[2,2])

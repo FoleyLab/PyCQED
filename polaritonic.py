@@ -1183,7 +1183,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn):
         
-        rlist = np.linspace(-1.5, 1.5, 1000)
+        rlist = np.linspace(-1.5, 1.5, 5000)
         
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
@@ -1261,7 +1261,7 @@ class polaritonic:
         
         init_active_index = self.active_index
         hf_file = open(prefix, "w")
-        rlist = np.linspace(-0.75,  -0.50, 500)
+        rlist = np.linspace(-1.5, 1.5, 5000)
         
         for r in range(0,len(rlist)):
             wr_str = " "
