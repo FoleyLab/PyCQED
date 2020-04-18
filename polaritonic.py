@@ -569,30 +569,35 @@ class polaritonic:
         ### from J. Chem. Phys. 138, 164106 (2013); doi: 10.1063/1.4801519
         ### are we in state Phi_3?
         if (self.active_index==2):
-            
-            #### is probability of hopping to the ground state > thresh?
-            if gik[0]>thresh:
-                self.active_index = 0
-                switch=1
-            #### is cumulative probability of hopping to Phi_2 > thresh
-            elif (gik[0]+gik[1])>thresh:
+
+            #### switch to 1 if cumulative probability is larger than thresh 
+            #### and gik[0]+gik[1] > gik[0]
+            if (gik[1]>0 and (gik[0]+gik[1])>thresh):
                 self.active_index = 1
                 switch=1
+                print("switched from 3->2")
+            #### otherwise if proability of switching to 0 is larger than thresh
+            elif gik[0]>thresh:
+                self.active_index = 0
+                switch=1
+                print("switched from 3->0")
+            else:
+                switch = 0
         ### are we in state Phi_2?     
         elif (self.active_index==1):
             if gik[0]>thresh:
                 self.active_index = 0
                 switch = 1
+                print("switched from 2->1")
+            else:
+                switch = 0
         else:
-            switch = 0
-                
-        
+            switch = 0 
         ### if we switched surfaces, we need to check some things about the
         ### momentum on the new surface... this comes from consideration of
         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
         ### on Surface Hopping
-        ''' skip this for now! '''
-        if 0: #switch:
+        if switch and self.active_index==1:
             ### momentum on surface j (starting surface)
             Pj = self.V*self.M
             ### This number should always be positive!
