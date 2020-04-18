@@ -487,7 +487,7 @@ class polaritonic:
         
         ''' Update nuclear degrees of freedom first '''
         #  Hellman-Feynman force
-        F_curr = self.Hellman_Feynman()
+        F_curr = np.real(self.Hellman_Feynman())
         
         ### get perturbation of force for Langevin dynamics
         rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
@@ -502,7 +502,7 @@ class polaritonic:
         self.R = self.R + v_halftime * self.dt
         
         ### Hellman-Feynman force at updated geometry 
-        F_fut = self.Hellman_Feynman()
+        F_fut = np.real(self.Hellman_Feynman())
         
         ### get new random force 
         rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)

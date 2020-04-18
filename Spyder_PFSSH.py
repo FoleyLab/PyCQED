@@ -53,7 +53,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 200
+N_time = 20000
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
