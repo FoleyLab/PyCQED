@@ -24,10 +24,10 @@ ci = 0+1j
 print(" What is the prefix for your data files?")
 prefix = input()
 
-r_of_t = np.zeros((15,8000))
+r_of_t = np.zeros((32,8000))
 t_of_t = np.zeros(8000)
-e_of_t = np.zeros((15,8000))
-for i in range(1,16):
+e_of_t = np.zeros((32,8000))
+for i in range(1,33):
     file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
     #file_path = "Data/test_gam_5.0_meV_nuc_traj.txt"
     print(file_path)
@@ -40,8 +40,8 @@ for i in range(1,16):
 
 dt = 0.12
 
-rlist = np.zeros(1000)
-PPES = np.zeros((1000,4))
+rlist = np.zeros(5000)
+PPES = np.zeros((5000,4))
 
 file_path = "Data/" + prefix + "1_pes.txt"
 b = np.loadtxt(file_path,dtype=complex)
@@ -54,7 +54,7 @@ PPES[:,3] = np.abs(b[:,4])
 '''
 '''
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(-0.8, 5.5))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 4.5))
 #ax.grid()
 
 ### these are the different curves/points that will be plotted
