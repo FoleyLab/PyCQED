@@ -1,5 +1,6 @@
 *.pyc
 .ipynb_checkpoints/*
+*.txt
 Notebooks/.ipynb_checkpoints/*
 Data/*.txt
 .DS_Store

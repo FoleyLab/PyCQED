@@ -570,17 +570,16 @@ class polaritonic:
         ### are we in state Phi_3?
         if (self.active_index==2):
 
-            #### switch to 1 if cumulative probability is larger than thresh 
-            #### and gik[0]+gik[1] > gik[0]
-            if (gik[1]>0 and (gik[0]+gik[1])>thresh):
+            #### switch to 0 if probability is larger than thresh
+            if gik[0]>thresh:
+                self.active_index = 0
+                switch=1
+                print("switched from 3->1")
+            #### otherwise if cumulative probability of switching to 1 is larger than thresh
+            elif (gik[0]+gik[1])>thresh:
                 self.active_index = 1
                 switch=1
                 print("switched from 3->2")
-            #### otherwise if proability of switching to 0 is larger than thresh
-            elif gik[0]>thresh:
-                self.active_index = 0
-                switch=1
-                print("switched from 3->0")
             else:
                 switch = 0
         ### are we in state Phi_2?     
