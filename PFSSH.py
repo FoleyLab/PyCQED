@@ -18,12 +18,12 @@ ri_init = -0.66156
 vi_init = 3.3375e-5
 
 ### will we scale the velocity?
-sv_condition = sys.argv[1]
+sv_condition = str(sys.argv[1])
 if sv_condition=='Scale_False':
     sv_bool = False
 else:
     sv_bool = True
-dc_condition = sys.argv[2]
+dc_condition = str(sys.argv[2])
 if dc_condition=='Real_DC':
     dc_bool = False
 else:
