@@ -27,7 +27,7 @@ dc_condition = str(sys.argv[2])
 if dc_condition=='Real_DC':
     dc_bool = False
 else:
-    dc_book = True
+    dc_bool = True
     
 ### Number of repeates
 N_repeats = int(sys.argv[3])
