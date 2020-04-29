@@ -150,6 +150,20 @@ class polaritonic:
     
     ''' Method that parses input dictionary '''
     def parse_options(self, args):
+        ### are we scaling velocities among switches/
+        if 'Scale_Velocity' in args:
+            self.scale = args['Scale_Velocity']
+        ### default is to scale!
+        else:
+            self.scale = 'True'
+        print("scaling condition",self.scale)
+        ### are we disregarding the imaginary part of the derivative coupling
+        if 'Complex_Derivative_Coupling' in args:
+            self.complex_dc = args['Complex_Derivative_Coupling']
+        ### default is to keep complex part!
+        else:
+            self.complex_dc = 'True'
+        print("complex condition",self.complex_dc)
         ### are we treating the photon frequencies as complex quantities?
         if 'Complex_Frequency' in args: 
             self.Complex_Frequency = args['Complex_Frequency']
@@ -596,7 +610,8 @@ class polaritonic:
         ### momentum on the new surface... this comes from consideration of
         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
         ### on Surface Hopping
-        if switch and self.active_index==1:
+        ### check to see if we want to scale or not by value of self.scale!
+        if switch and self.active_index==1 and self.scale:
             ### momentum on surface j (starting surface)
             Pj = self.V*self.M
             ### This number should always be positive!
@@ -708,7 +723,12 @@ class polaritonic:
                     ck = self.transformation_vecs_L_to_P[:,k]
                     tmp = np.dot(Hp, ck)
                     Fjk = -1*np.dot(np.conj(cj), tmp)
-                    self.dc[j,k] = Fjk/(Vkk-Vjj)
+                    ### check if we should disregard the imaginary part
+                    if self.complex_dc:
+                        self.dc[j,k] = Fjk/(Vkk-Vjj)
+                    else:
+                        self.dc[j,k] = np.real(Fjk/(Vkk-Vjj))
+                        
                     self.Delta_V_jk[j,k] = Vjj-Vkk
         return 1
         

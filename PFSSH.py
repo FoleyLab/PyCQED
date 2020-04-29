@@ -17,28 +17,40 @@ import sys
 ri_init = -0.66156
 vi_init = 3.3375e-5
 
+### will we scale the velocity?
+sv_condition = sys.argv[1]
+if sv_condition=='Scale_False':
+    sv_bool = False
+else:
+    sv_bool = True
+dc_condition = sys.argv[2]
+if dc_condition=='Real_DC':
+    dc_bool = False
+else:
+    dc_book = True
+    
 ### Number of repeates
-N_repeats = int(sys.argv[1])
+N_repeats = int(sys.argv[3])
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[2]) 
+gamp = float(sys.argv[4]) 
 #gamp = 100.0
 ### convert to a.u.
 gam_diss_np = gamp * 1e-3 / 27.211
 
 ### photonic mode energy in eV
-omp = float(sys.argv[3])
+omp = float(sys.argv[5])
 #omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[4])
+gp = float(sys.argv[6])
 #gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[5]
+prefix = sys.argv[7]
 #prefix = "g_100.0_test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
@@ -63,6 +75,8 @@ N_thresh = int( N_time / 4)
 options = {
         'Number_of_Photons': 1,
         'Complex_Frequency': True,
+        'Complex_Derivative_Coupling': dc_bool,
+        'Scale_Velocity': sv_bool,
         'Photon_Energys': [omc],
         'Coupling_Strengths': [gc], 
         'Photon_Lifetimes': [gam_diss_np],
