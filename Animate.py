@@ -54,7 +54,7 @@ PPES[:,3] = np.abs(b[:,4])
 '''
 '''
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(0.5, 4.5))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-2, 2), ylim=(-0.5, 4.5))
 #ax.grid()
 
 ### these are the different curves/points that will be plotted
