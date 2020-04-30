@@ -9,9 +9,9 @@ Tools for simulating polaritonic chemical dynamics using the formalism of cavity
 
 In the above example, there are 7 arguments passed to the python script PFSSH.py.  
 
-- Argument 1 is a string that turns on or off velocity scaling that is ordinarily a part of the fewest switches surface hopping approach.  Use 'Scale_False' if you DO NOT want to scale the velocity and 'Scale_True' if you DO want to scale the velocity.  'Scale_True' will be consistent with the ordinary formulation of surface hopping.
+- Argument 1 is a string that turns on or off velocity scaling that is ordinarily a part of the fewest switches surface hopping approach.  Use `Scale_False` if you DO NOT want to scale the velocity and `Scale_True` if you DO want to scale the velocity.  `Scale_True` will be consistent with the ordinary formulation of surface hopping.
 
-- Argument 2 is a string that keeps or discards the imaginary part of the derivative coupling.  Use 'Complex_DC' to keep the imaginary part (i.e. use the full complex derivative coupling), and use 'Real_DC' to disgard the imaginary part (i.e. use only the real part of the derivative coupling).
+- Argument 2 is a string that keeps or discards the imaginary part of the derivative coupling.  Use `Complex_DC` to keep the imaginary part (i.e. use the full complex derivative coupling), and use `Real_DC` to disgard the imaginary part (i.e. use only the real part of the derivative coupling).
 
 - Argument 3 is an integer that specifies the number of independant trajectories to run; since the value is 1 in the above example, only 1 trajectory will be run.
 
