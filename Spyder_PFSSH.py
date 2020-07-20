@@ -17,41 +17,29 @@ import sys
 ri_init = -0.66156
 vi_init = 3.3375e-5
 
-### will we scale the velocity?
-sv_condition = str(sys.argv[1])
-if sv_condition=='Scale_False':
-    sv_bool = False
-else:
-    sv_bool = True
-dc_condition = str(sys.argv[2])
-if dc_condition=='Real_DC':
-    dc_bool = False
-else:
-    dc_bool = True
-    
 ### Number of repeates
-N_repeats = int(sys.argv[3])
+N_repeats = 1 #int(sys.argv[1])
 ### photonic mode dissipation rate in meV, gamma
-gamp = float(sys.argv[4]) 
-#gamp = 100.0
+#gamp = float(sys.argv[2]) 
+gamp = 10.0
 ### convert to a.u.
-gam_diss_np = gamp * 1e-3 / 27.211
+gam_diss_np = gamp * 1e-3 / (2 * 27.211 )
 
 ### photonic mode energy in eV
-omp = float(sys.argv[5])
-#omp = 2.45
+#omp = float(sys.argv[3])
+omp = 2.45
 ### convert to a.u.
 omc = omp/27.211
 ### coupling strength in eV
-gp = float(sys.argv[6])
-#gp = 0.02
+#gp = float(sys.argv[4])
+gp = 0.02
 gc = gp/27.211
 
 au_to_ps = 2.4188e-17 * 1e12
 
 ### get prefix for data file names
-prefix = sys.argv[7]
-#prefix = "g_100.0_test"
+#prefix = sys.argv[5]
+prefix = "g_100.0_test"
 ### filename to write nuclear trajectory to
 nuc_traj_fn = "Data/" + prefix + '_nuc_traj.txt'
 ### filename to wrote PES to
@@ -65,7 +53,7 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 
 ### Number of updates!
-N_time = 4000000
+N_time = 20000
 
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -75,8 +63,6 @@ N_thresh = int( N_time / 4)
 options = {
         'Number_of_Photons': 1,
         'Complex_Frequency': True,
-        'Complex_Derivative_Coupling': dc_bool,
-        'Scale_Velocity': sv_bool,
         'Photon_Energys': [omc],
         'Coupling_Strengths': [gc], 
         'Photon_Lifetimes': [gam_diss_np],
@@ -101,14 +87,14 @@ polt.H_e()
 polt.H_total = np.copy(polt.H_electronic + polt.H_photonic + polt.H_interaction)
 polt.Transform_L_to_P()
 polt.Derivative_Coupling()
-#print("H")
-#print(polt.H_polariton)
-#print("dc")
-#print(polt.dc)
-#print("C")
-#print(polt.C_polariton)
-#print("V")
-#print(polt.V)
+
+print("H_pol")
+print(polt.H_polariton)
+
+print("dc")
+print(polt.dc)
+#print("H_loc")
+#print(np.imag(polt.H_total))
 
 
 ### Write potential energy surface!
@@ -129,7 +115,8 @@ for j in range(0,N_repeats):
     ri_init = polt.R
     vi_init = polt.V
     
-    polt.active_index = 2 #polt.initial_state
+    polt.active_index = polt.initial_state
+    print(polt.initial_state)
     
     ### uncomment if you wish to print the initial conditions
     #print("  Initial Position is ",polt.R)
@@ -195,4 +182,3 @@ if N_repeats==1:
     electronic_file.close()
     nuclear_file.close()
     
-

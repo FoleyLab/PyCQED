@@ -1,33 +1,33 @@
 #!/usr/bin/bash       
-python PFSSH.py 4 100.0 2.45 0.02 test1 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test2 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test3 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test4 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test5 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test6 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test7 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 100.0 2.45 0.02 test8 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test9 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test10 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test11 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test12 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test13 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test14 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test15 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 150.0 2.45 0.02 test16 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test17 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test18 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test19 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test20 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test21 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test22 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test23 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 200.0 2.45 0.02 test24 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test25 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test26 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test27 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test28 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test29 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test30 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test31 >> test_omc_2.45_hgc_0.02.txt &
-python PFSSH.py 4 250.0 2.45 0.02 test32 >> test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_1 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_2 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_3 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_4 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_5 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_6 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_7 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_8 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_9 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_10 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_11 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_12 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_13 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_14 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_15 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_16 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_17 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_18 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_19 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_20 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_21 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_22 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_23 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_24 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_25 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_26 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_27 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_28 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_29 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_30 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_31 >> tt_test_omc_2.45_hgc_0.02.txt &
+python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 tf_gam_1.0_32 >> tt_test_omc_2.45_hgc_0.02.txt &
