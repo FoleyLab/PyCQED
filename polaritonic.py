@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 21 14:58:08 2019
+Copyright (C) 2020 Panayiota Antoniou, Figen Suchanek, James F. Varner, and  Jonathan J. Foley IV
+"""
 
-@author: foleyj10
-
+"""
 NOTE: As of 02/22/2020, this class assumes that the Hamiltonian matrix can be
 non-Hermitian due to the fact that the photonic finite lifetime can be 
 represented as a complex frequency:
@@ -25,10 +25,6 @@ The nuclear forces arise from applying the Hellman-Feynman theorem in the local 
     where H'_local = (H_local(R + dr) - H_local(R - dr))/2dr
 and since the H_local(R + dr) and the H_local(R - dr) both have identical
 non-Hermtian parts, they cancel and the Force will be real!
-
-FURTHER NOTE: polaritonic_bup.py contains the original versions of functions
-that neglected the complex frequency; one can refer to it if we decide this 
-non-Hermitian business is bad!
 
 """
 import numpy as np
