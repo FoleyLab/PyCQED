@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Copyright (C) 2020 Panayiota Antoniou, Figen Suchanek, James F. Varner, and  Jonathan J. Foley IV
-"""
+Created on Thu Nov 21 14:58:08 2019
 
-"""
+@author: foleyj10
+
 NOTE: As of 02/22/2020, this class assumes that the Hamiltonian matrix can be
 non-Hermitian due to the fact that the photonic finite lifetime can be 
 represented as a complex frequency:
@@ -26,9 +26,14 @@ The nuclear forces arise from applying the Hellman-Feynman theorem in the local 
 and since the H_local(R + dr) and the H_local(R - dr) both have identical
 non-Hermtian parts, they cancel and the Force will be real!
 
+FURTHER NOTE: polaritonic_bup.py contains the original versions of functions
+that neglected the complex frequency; one can refer to it if we decide this 
+non-Hermitian business is bad!
+
 """
 import numpy as np
 from numpy import linalg as LA
+from scipy import linalg
 import math
 from numpy.polynomial.hermite import *
 
@@ -62,7 +67,11 @@ class polaritonic:
         self.population_polariton = np.zeros(self.N_basis_states)
         
         self.transformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.l_transformation_vecs_L_to_P = np.zeros_like(self.transformation_vecs_L_to_P)
         self.polariton_energies = np.zeros(self.N_basis_states,dtype=complex)
+        
+        self.idx = np.zeros(self.N_basis_states)
+        self.lidx = np.zeros(self.N_basis_states)
         
         ### Hamiltonians
         self.H_e()
@@ -76,7 +85,7 @@ class polaritonic:
         self.C_polariton[self.initial_state] = 1+0j
         
         ### transform to polariton basis
-        self.Transform_L_to_P()
+        self.Transform_L_to_P('True')
         
                 
         ''' Get Total Energy of Initial State!  This will be a complex number! '''        
@@ -421,14 +430,33 @@ class polaritonic:
         corresponding polariton basis and store it in
         self.D_polariton
         '''
-    def Transform_L_to_P(self):
+    def Transform_L_to_P(self, first):
+        #print(first)
+        ### left vectors
+        lvals, lvecs = linalg.eig(self.H_total, left=True, right=False)
+        ### right vectors
+        #vals, vecs = linalg.eig(polt.H_total, left=False, right=True)
         vals, vecs = LA.eig(self.H_total)
-        ### sort the eigenvectors
-        idx = vals.argsort()[::1]
-        vals = vals[idx]
-        v = vecs[:,idx]
+        ### sort the right eigenvectors
+        ''' if first=='True':
+            self.idx = vals.argsort()[::1]
+            print("idx is ",self.idx)
+            self.lidx = lvals.argsort()[::1]
+            print("lidx is ",self.lidx)
+        vals = vals[self.idx]
+        v = vecs[:,self.idx]
+        
+        ### sort the left eigenvectors
+        lvals = lvals[self.lidx]
+        lv = lvecs[:,self.lidx]
+        '''
+        
+        v = np.copy(vecs)
+        lv = np.copy(lvecs)
+        
         ### store eigenvectors and eigenvalues
         self.transformation_vecs_L_to_P = np.copy(v)
+        self.l_transformation_vecs_L_to_P = np.copy(lv)
         self.polariton_energies = np.copy(vals)
         ### transform Htot with v^-1
         vt0 = np.dot(LA.inv(v),self.H_total)
@@ -655,7 +683,7 @@ class polaritonic:
         ### get transformation vector at current R
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
+        self.Transform_L_to_P('False')
         c = self.transformation_vecs_L_to_P[:,self.active_index]
         ### update energy attribute while we are at it!
         self.Energy = self.polariton_energies[self.active_index]
@@ -707,7 +735,7 @@ class polaritonic:
         self.H_e()
         ### H at forward step
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
+        self.Transform_L_to_P('False')
 
         
         for j in range(0, self.N_basis_states): #self.N_basis_states):
@@ -769,7 +797,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn):
         
-        rlist = np.linspace(-1.5, 1.5, 5000)
+        rlist = np.linspace(-1.5, 1.5, 100)
         
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
@@ -783,7 +811,7 @@ class polaritonic:
             pc_str = pc_str + str(self.R) + " "
             self.H_e()
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-            self.Transform_L_to_P()
+            self.Transform_L_to_P('False')
             v = self.transformation_vecs_L_to_P
             
             for i in range(0,self.N_basis_states):
@@ -847,7 +875,7 @@ class polaritonic:
         
         init_active_index = self.active_index
         hf_file = open(prefix, "w")
-        rlist = np.linspace(-1.5, 1.5, 5000)
+        rlist = np.linspace(-1.0, 1.0, 5000)
         
         for r in range(0,len(rlist)):
             wr_str = " "
