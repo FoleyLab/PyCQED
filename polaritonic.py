@@ -887,14 +887,21 @@ class polaritonic:
         - compute both of these surfaces
         - write it to a file with names given by the respective file-name strings
     '''
-    def Write_PES(self, pes_fn, pc_fn):
+    def Write_PES(self, pes_fn, pc_fn, dc_fn):
         
-        rlist = np.linspace(-1.5, 1.5, 100)
+        rlist = np.linspace(-1.25, 1.25, 500)
         pes_dr = rlist[1]-rlist[0]
+        
+        ### temporary arrays for old eigenvectors
+        g0_old = np.zeros(self.N_basis_states, dtype='complex')
+        LP_old = np.zeros(self.N_basis_states, dtype='complex')
+        UP_old = np.zeros(self.N_basis_states, dtype='complex')
+        e1_old = np.zeros(self.N_basis_states, dtype='complex')
         
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
         pc_file = open(pc_fn, "w")
+        dc_file = open(dc_fn, "w")
         
         for r in range(0,len(rlist)):
             wr_str = " "
@@ -906,7 +913,10 @@ class polaritonic:
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
             self.Transform_L_to_P(pes_dr)
             v = self.transformation_vecs_L_to_P
-            
+            g0 = v[:,0]
+            LP = v[:,1]
+            UP = v[:,2]
+            e1 = v[:,3]
             for i in range(0,self.N_basis_states):
                 v_i = v[:,i]
                 cv_i = np.conj(v_i)
@@ -920,6 +930,33 @@ class polaritonic:
                         pc = pc + np.real(cv_i[j] * v_i[j])
                         
                 pc_str = pc_str + str(pc) + " "
+            
+            ### compute derivative couplings
+            if (r>0):
+                dg0 = (g0-g0_old)/pes_dr
+                dLP = (LP-LP_old)/pes_dr
+                dUP = (UP-UP_old)/pes_dr
+                de1 = (e1-e1_old)/pes_dr
+                
+                d12 = np.dot(np.conj(g0),dLP)
+                d13 = np.dot(np.conj(g0),dUP)
+                d14 = np.dot(np.conj(g0),de1)
+                
+                d23 = np.dot(np.conj(LP),dUP)
+                d24 = np.dot(np.conj(LP),de1)
+                
+                d34 = np.dot(np.conj(UP),de1)
+                
+                d_str = str(self.R) + " " + str(d12) + " " + str(d13) + " " + str(d14) + " " + str(d23)
+                d_str = d_str + " " + str(d24) + " " + str(d34) + "\n"
+                dc_file.write(d_str)
+            g0_old = g0
+            LP_old = LP
+            UP_old = UP
+            e1_old = e1
+                
+                
+                
         
             wr_str = wr_str + "\n"
             pc_str = pc_str + "\n"        
@@ -968,7 +1005,7 @@ class polaritonic:
         
         init_active_index = self.active_index
         hf_file = open(prefix, "w")
-        rlist = np.linspace(-1.0, 1.0, 5000)
+        rlist = np.linspace(-1.0, 1.0, 500)
         
         for r in range(0,len(rlist)):
             wr_str = " "
