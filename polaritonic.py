@@ -887,7 +887,7 @@ class polaritonic:
         - compute both of these surfaces
         - write it to a file with names given by the respective file-name strings
     '''
-    def Write_PES(self, pes_fn, pc_fn, dc_fn):
+    def Write_PES(self, pes_fn, pc_fn, dc_fn, ip_fn):
         
         rlist = np.linspace(-1.25, 1.25, 500)
         pes_dr = rlist[1]-rlist[0]
@@ -902,6 +902,7 @@ class polaritonic:
         pes_file = open(pes_fn, "w")
         pc_file = open(pc_fn, "w")
         dc_file = open(dc_fn, "w")
+        ip_file = open(ip_fn, "w")
         
         for r in range(0,len(rlist)):
             wr_str = " "
@@ -913,10 +914,27 @@ class polaritonic:
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
             self.Transform_L_to_P(pes_dr)
             v = self.transformation_vecs_L_to_P
+            lv =  self.l_transformation_vecs_L_to_P 
+            
             g0 = v[:,0]
             LP = v[:,1]
             UP = v[:,2]
             e1 = v[:,3]
+            lg0 = lv[:,0]
+            lLP = lv[:,1]
+            lUP = lv[:,2]
+            le1 = lv[:,3]
+            
+            ip_22 = np.dot(np.conj(LP), LP)
+            ip_33 = np.dot(np.conj(UP), UP)
+            ip_23 = np.dot(np.conj(LP), UP)
+            ip_32 = np.dot(np.conj(UP), LP)
+            
+            lLPvrLP = np.sum(np.conj(lLP)-LP)
+            lUPvrUP = np.sum(np.conj(lUP)-UP)
+            ip_str = str(self.R) + " " + str(ip_22) + " " + str(ip_33) + " " + str(ip_23) + " " + str(ip_32)
+            ip_str = ip_str + " " + str(lLPvrLP) + " " + str(lUPvrUP) + "\n"
+            ip_file.write(ip_str)
             for i in range(0,self.N_basis_states):
                 v_i = v[:,i]
                 cv_i = np.conj(v_i)
@@ -933,22 +951,22 @@ class polaritonic:
             
             ### compute derivative couplings
             if (r>0):
-                dg0 = (g0-g0_old)/pes_dr
+                #dg0 = (g0-g0_old)/pes_dr
                 dLP = (LP-LP_old)/pes_dr
                 dUP = (UP-UP_old)/pes_dr
-                de1 = (e1-e1_old)/pes_dr
+                #de1 = (e1-e1_old)/pes_dr
                 
-                d12 = np.dot(np.conj(g0),dLP)
-                d13 = np.dot(np.conj(g0),dUP)
-                d14 = np.dot(np.conj(g0),de1)
+                #d12 = np.dot(np.conj(g0),dLP)
+                #d13 = np.dot(np.conj(g0),dUP)
+                #d14 = np.dot(np.conj(g0),de1)
                 
                 d23 = np.dot(np.conj(LP),dUP)
-                d24 = np.dot(np.conj(LP),de1)
+                d32 = np.dot(np.conj(UP),dLP)
+                #d24 = np.dot(np.conj(LP),de1)
                 
-                d34 = np.dot(np.conj(UP),de1)
+                #d34 = np.dot(np.conj(UP),de1)
                 
-                d_str = str(self.R) + " " + str(d12) + " " + str(d13) + " " + str(d14) + " " + str(d23)
-                d_str = d_str + " " + str(d24) + " " + str(d34) + "\n"
+                d_str = str(self.R) + " " + str(d23) + " " + str(d32) + "\n"
                 dc_file.write(d_str)
             g0_old = g0
             LP_old = LP
@@ -966,6 +984,8 @@ class polaritonic:
         ### Close PES file
         pes_file.close()
         pc_file.close()
+        dc_file.close()
+        ip_file.close()
         
         return 1
     
