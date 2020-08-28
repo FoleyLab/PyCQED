@@ -602,8 +602,10 @@ class polaritonic:
 
 
     ''' Non-Hermitian FSSH update '''
-    def NH_FSSH(self):
+    def NH_FSSH(self, up_force, lp_force, g0_force, dc_23_re, dc_23_im, dc_32_re, dc_32_im,
+                pes_g0_re, pes_g0_im, pes_lp_re, pes_lp_im, pes_up_re, pes_up_im, pes_e1_re, pes_e1_im):
         ### set up some quantities for surface hopping first!
+        ci = 0+1j
         switch=0
         sign = 1
         starting_act_idx = self.active_index
@@ -616,8 +618,17 @@ class polaritonic:
         gik = np.zeros(self.N_basis_states)
         
         ''' Update nuclear degrees of freedom first '''
-        #  Hellman-Feynman force
-        F_curr = np.real(self.Hellman_Feynman())
+        #  Force from spline - will use the appropriate spline
+        #  based on which surface we are on!
+        if self.active_index==2:
+            F_curr = -1*up_force(self.R)
+        elif self.active_index==1:
+            F_curr = -1*lp_force(self.R)
+        else:
+            F_curr = -1*g0_force(self.R)
+        
+        ### Depricated as of 8/28/2020     
+        #F_curr = np.real(self.Hellman_Feynman())
         
         ### get perturbation of force for Langevin dynamics
         rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
@@ -631,8 +642,16 @@ class polaritonic:
         ### update R
         self.R = self.R + v_halftime * self.dt
         
-        ### Hellman-Feynman force at updated geometry 
-        F_fut = np.real(self.Hellman_Feynman())
+        if self.active_index==2:
+            F_curr = -1*up_force(self.R)
+        elif self.active_index==1:
+            F_curr = -1*lp_force(self.R)
+        else:
+            F_curr = -1*g0_force(self.R)
+        
+        ### Depricated as of 8/28/2020
+        #Hellman-Feynman force at updated geometry 
+        #F_fut = np.real(self.Hellman_Feynman())
         
         ### get new random force 
         rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
@@ -653,7 +672,17 @@ class polaritonic:
         
         
         ### Get derivative coupling at updated position!
-        self.Derivative_Coupling()
+        #### depricated as of 8/28/2020
+        #self.Derivative_Coupling()
+        ### now use splines for derivative coupling!
+        self.dc[1,2] = dc_23_re(self.R)+ci*dc_23_im(self.R)
+        self.dc[2,1] = dc_32_re(self.R)+ci*dc_32_im(self.R)
+        
+        ### now use splines to update the polaritonic Hamiltonian
+        self.H_polariton[0,0] = pes_g0_re(self.R)+ci*pes_g0_im(self.R)
+        self.H_polariton[1,1] = pes_lp_re(self.R)+ci*pes_lp_im(self.R)
+        self.H_polariton[2,2] = pes_up_re(self.R)+ci*pes_up_im(self.R)
+        self.H_polariton[3,3] = pes_e1_re(self.R)+ci*pes_e1_im(self.R)
         
         ### populations before updates
         for i in range(0,self.N_basis_states):
@@ -732,8 +761,12 @@ class polaritonic:
             Pj = self.V*self.M
             ### This number should always be positive!
             ### We will discard the imaginary part
-            delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
+            init = starting_act_idx
+            fin = self.active_index
+            ''' deprecated as of 8/28/2020 '''
+            ####delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
             
+            delta_V = np.real(self.H_polariton[init,init] - self.H_polariton[fin, fin])
             ### speed on surface k (new surface)
             Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
             Vk = forward * Vk_mag
