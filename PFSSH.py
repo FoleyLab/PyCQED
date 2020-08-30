@@ -12,6 +12,7 @@ import numpy as np
 #import matplotlib.animation as animation
 import time
 import sys
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 ### dummi initial position and velocity values
 ri_init = -0.66156
@@ -68,8 +69,8 @@ dc_fn = "Data/" + prefix + "_dc.txt"
 ip_fn = "Data/" + prefix + "_ip.txt"
 
 ### Number of updates!
-N_time = 4000000
-
+#N_time = 4000000
+N_time = 400000
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
 
@@ -124,7 +125,7 @@ polt.Write_PES(pes_fn, pc_fn, dc_fn, ip_fn)
 
 ### fit PES splines
 pes_v = np.loadtxt(pes_fn, dtype=complex)
-spline_axis = np.real(pes_v[:,0])
+spline_axis = np.copy(np.real(pes_v[:,0]))
  
 # g0
 re_g0_spline = InterpolatedUnivariateSpline(spline_axis, np.real(pes_v[:,1]), k=3)
@@ -151,7 +152,7 @@ re_up_force = re_UP_spline.derivative()
 
 ### fit derivative coupling splines
 dc = np.loadtxt(dc_fn,dtype=complex)
-
+spline_axis = np.copy(np.real(dc[:,0]))
 re_dc_23_spline = InterpolatedUnivariateSpline(spline_axis, np.real(dc[:,1]), k=3)
 im_dc_23_spline = InterpolatedUnivariateSpline(spline_axis, np.imag(dc[:,1]), k=3)
 

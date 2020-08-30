@@ -522,12 +522,12 @@ class polaritonic:
             idx[1] = idx[2]
             idx[2] = UP_idx
         
-        v = vecs[:,idx]
-        vals = vals[idx]
+        v = np.copy(vecs[:,idx])
+        vals = np.copy(vals[idx])
         
         ### sort the left eigenvectors
-        lvals = lvals[idx]
-        lv = lvecs[:,idx]
+        lvals = np.copy(lvals[idx])
+        lv = np.copy(lvecs[:,idx])
         
         
         #v = np.copy(vecs)
@@ -540,7 +540,7 @@ class polaritonic:
         ### transform Htot with v^-1
         vt0 = np.dot(LA.inv(v),self.H_total)
         ### finish transformation to polariton basis, Hpl
-        self.H_polariton = np.dot(vt0,v)
+        self.H_polariton = np.copy(np.dot(vt0,v))
         
         ### now update the en/slope/curve quantities
         self.en_lp_new = vals[1]
@@ -643,11 +643,14 @@ class polaritonic:
         self.R = self.R + v_halftime * self.dt
         
         if self.active_index==2:
-            F_curr = -1*up_force(self.R)
+            F_fut = -1*up_force(self.R)
+            self.Energy = pes_up_re(self.R)
         elif self.active_index==1:
-            F_curr = -1*lp_force(self.R)
+            F_fut = -1*lp_force(self.R)
+            self.Energy = pes_lp_re(self.R)
         else:
-            F_curr = -1*g0_force(self.R)
+            F_fut = -1*g0_force(self.R)
+            self.Energy = pes_g0_re(self.R)
         
         ### Depricated as of 8/28/2020
         #Hellman-Feynman force at updated geometry 
@@ -946,17 +949,17 @@ class polaritonic:
             self.H_e()
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
             self.Transform_L_to_P(pes_dr)
-            v = self.transformation_vecs_L_to_P
-            lv =  self.l_transformation_vecs_L_to_P 
+            v = np.copy(self.transformation_vecs_L_to_P)
+            lv =  np.copy(self.l_transformation_vecs_L_to_P)
             
-            g0 = v[:,0]
-            LP = v[:,1]
-            UP = v[:,2]
-            e1 = v[:,3]
-            lg0 = lv[:,0]
-            lLP = lv[:,1]
-            lUP = lv[:,2]
-            le1 = lv[:,3]
+            g0 = np.copy(v[:,0])
+            LP = np.copy(v[:,1])
+            UP = np.copy(v[:,2])
+            e1 = np.copy(v[:,3])
+            lg0 = np.copy(lv[:,0])
+            lLP = np.copy(lv[:,1])
+            lUP = np.copy(lv[:,2])
+            le1 = np.copy(lv[:,3])
             
             ip_22 = np.dot(np.conj(LP), LP)
             ip_33 = np.dot(np.conj(UP), UP)
@@ -969,8 +972,8 @@ class polaritonic:
             ip_str = ip_str + " " + str(lLPvrLP) + " " + str(lUPvrUP) + "\n"
             ip_file.write(ip_str)
             for i in range(0,self.N_basis_states):
-                v_i = v[:,i]
-                cv_i = np.conj(v_i)
+                v_i = np.copy(v[:,i])
+                cv_i = np.copy(np.conj(v_i))
                 
                 wr_str = wr_str + str(self.polariton_energies[i]) + " "
                 
@@ -985,8 +988,8 @@ class polaritonic:
             ### compute derivative couplings
             if (r>0):
                 #dg0 = (g0-g0_old)/pes_dr
-                dLP = (LP-LP_old)/pes_dr
-                dUP = (UP-UP_old)/pes_dr
+                dLP = np.copy((LP-LP_old)/pes_dr)
+                dUP = np.copy((UP-UP_old)/pes_dr)
                 #de1 = (e1-e1_old)/pes_dr
                 
                 #d12 = np.dot(np.conj(g0),dLP)
@@ -1001,10 +1004,10 @@ class polaritonic:
                 
                 d_str = str(self.R) + " " + str(d23) + " " + str(d32) + "\n"
                 dc_file.write(d_str)
-            g0_old = g0
-            LP_old = LP
-            UP_old = UP
-            e1_old = e1
+            g0_old = np.copy(g0)
+            LP_old = np.copy(LP)
+            UP_old = np.copy(UP)
+            e1_old = np.copy(e1)
                 
                 
                 
