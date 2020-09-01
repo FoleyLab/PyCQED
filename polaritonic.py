@@ -219,11 +219,11 @@ class polaritonic:
         if 'Time_Step' in args:
             self.dt = args['Time_Step']
         else:
-            self.dt = 0.12
+            self.dt = 0.025
         if 'Space_Step' in args:
             self.dr = args['Space_Step']
         else:
-            self.dr = 0.001
+            self.dr = 0.0005
         ### how many photonic modes
         if 'Number_of_Photons' in args:
             self.NPhoton = args['Number_of_Photons']
@@ -698,8 +698,7 @@ class polaritonic:
         trace = 0.
         dot_trace = 0.
         for i in range(1,self.N_basis_states):
-            c_i = self.C_polariton[i]
-            p_i = np.real( np.dot(np.conj(c_i),c_i))
+            p_i = np.real( np.conj(self.C_polariton[i]) * self.C_polariton[i])
             self.population_polariton[i] = p_i
             pop_fut[i] = p_i
             trace += p_i
@@ -733,18 +732,21 @@ class polaritonic:
         if (self.active_index==2):
 
             #### switch to 0 if probability is larger than thresh
+            ''' ignore switches to surface 0
             if gik[0]>thresh:
                 self.active_index = 0
                 switch=1
                 #print("switched from 3->1")
+            '''
             #### otherwise if cumulative probability of switching to 1 is larger than thresh
-            elif (gik[0]+gik[1])>thresh:
+            if (gik[0]+gik[1])>thresh:
                 self.active_index = 1
                 switch=1
                 #print("switched from 3->2")
             else:
                 switch = 0
-        ### are we in state Phi_2?     
+        ### are we in state Phi_2? 
+        ''' ignore switches to surface 0 
         elif (self.active_index==1):
             if gik[0]>thresh:
                 self.active_index = 0
@@ -752,8 +754,9 @@ class polaritonic:
                 #print("switched from 2->1")
             else:
                 switch = 0
-        else:
-            switch = 0 
+        '''
+        #else:
+        #    switch = 0 
         ### if we switched surfaces, we need to check some things about the
         ### momentum on the new surface... this comes from consideration of
         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
@@ -925,7 +928,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn, dc_fn, ip_fn):
         
-        rlist = np.linspace(-1.25, 1.25, 500)
+        rlist = np.linspace(-1.25, 1.25, 1000)
         pes_dr = rlist[1]-rlist[0]
         
         ### temporary arrays for old eigenvectors
@@ -1042,6 +1045,9 @@ class polaritonic:
         #    e_str = e_str + str(np.real(self.D_local[j,j])) + " "
             
         for j in range(0,self.N_basis_states):
+            cj = self.C_polariton[j]
+            pj = np.real( np.conj(cj) * cj)
+            e_str = e_str + str(pj) + " " 
             e_str = e_str + str(np.real(self.population_polariton[j])) + " "
             #e_str = e_str + str(np.real(self.C_polariton[j])) + " " 
             #e_str = e_str + str(np.imag(self.C_polariton[j])) + " "

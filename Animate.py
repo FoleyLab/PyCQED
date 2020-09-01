@@ -24,14 +24,14 @@ ci = 0+1j
 print(" What is the prefix for your data files?")
 prefix = input()
 
-n_time = 800
-r_of_t = np.zeros((1,n_time))
+n_time = 1400
+r_of_t = np.zeros((6,n_time))
 t_of_t = np.zeros(n_time)
-e_of_t = np.zeros((1,n_time))
-for i in range(1,2):
-    file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
+e_of_t = np.zeros((6,n_time))
+for i in range(1,6):
+    file_path = "Data/" + prefix + str(i+1) + "_nuc_traj.txt"
     #file_path = "Data/test_gam_5.0_meV_nuc_traj.txt"
-    print(file_path)
+    print("fp is ",file_path)
     a = np.loadtxt(file_path)
     #print(len(a[:,0]))
     
@@ -39,12 +39,12 @@ for i in range(1,2):
     r_of_t[i-1,:] = a[:,1]
     e_of_t[i-1,:] = a[:,2]
 
-dt = 0.12
+dt = 0.06
 
-rlist = np.zeros(500)
-PPES = np.zeros((500,4))
+rlist = np.zeros(1000)
+PPES = np.zeros((1000,4))
 
-file_path = "Data/" + prefix + "1_pes.txt"
+file_path = "Data/" + prefix + "2_pes.txt"
 b = np.loadtxt(file_path,dtype=complex)
 
 rlist[:] = np.real(b[:,0])
@@ -55,7 +55,7 @@ PPES[:,3] = np.abs(b[:,4])
 '''
 '''
 fig = plt.figure()
-ax = fig.add_subplot(111, autoscale_on=True, xlim=(-1.5, 1.5), ylim=(0.5, 6.5))
+ax = fig.add_subplot(111, autoscale_on=True, xlim=(-1.25, 1.25), ylim=(-0.7, 6.5))
 #ax.grid()
 
 ### these are the different curves/points that will be plotted
