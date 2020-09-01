@@ -69,8 +69,8 @@ dc_fn = "Data/" + prefix + "_dc.txt"
 ip_fn = "Data/" + prefix + "_ip.txt"
 
 ### Number of updates!
-#N_time = 4000000
-N_time = 400000
+N_time = 700000 #000000
+#N_time = 400000
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
 
@@ -90,7 +90,7 @@ options = {
         ### temperature in a.u.
         'Temperature': 0.00095,
         ### friction in a.u.
-        'Friction': 0.000011,
+        'Friction': 0.000012,
         ### specify initial state as a human would, not a computer...
         ### i.e. 1 is the ground state... it will be shifted down by -1 so
         ### that it makes sense to the python index convention
@@ -100,6 +100,11 @@ options = {
 
 ### instantiate
 polt = polaritonic(options)
+print(polt.C_polariton)
+
+for i in range(0,polt.N_basis_states):
+    p_i = np.real(np.conj(polt.C_polariton[i])*polt.C_polariton[i])
+    polt.population_polariton[i] = p_i
 
 ''' old way of initializing!!!! 
     deprecated as of 8/28/2020 
@@ -173,8 +178,12 @@ for j in range(0,N_repeats):
     vi_init = polt.V
     
     ### initialize on the UP surface
-    polt.active_index = 2 #polt.initial_state
+    polt.active_index = 2 
+    polt.initial_state = 2
     polt.Energy = re_UP_spline(polt.R)
+    print(polt.R)
+    print(polt.V)
+    print(polt.Energy)
     
     ### uncomment if you wish to print the initial conditions
     #print("  Initial Position is ",polt.R)
