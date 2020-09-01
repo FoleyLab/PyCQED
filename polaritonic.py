@@ -925,7 +925,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn, dc_fn, ip_fn):
         
-        rlist = np.linspace(-1.25, 1.25, 500)
+        rlist = np.linspace(-1.25, 1.25, 1000)
         pes_dr = rlist[1]-rlist[0]
         
         ### temporary arrays for old eigenvectors
