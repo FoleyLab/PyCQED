@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Copyright (C) 2020 Panayiota Antoniou, Figen Suchanek, James F. Varner, and  Jonathan J. Foley IV
-"""
+Created on Thu Nov 21 14:58:08 2019
 
-"""
+@author: foleyj10
+
 NOTE: As of 02/22/2020, this class assumes that the Hamiltonian matrix can be
 non-Hermitian due to the fact that the photonic finite lifetime can be 
 represented as a complex frequency:
@@ -26,11 +26,17 @@ The nuclear forces arise from applying the Hellman-Feynman theorem in the local 
 and since the H_local(R + dr) and the H_local(R - dr) both have identical
 non-Hermtian parts, they cancel and the Force will be real!
 
+FURTHER NOTE: polaritonic_bup.py contains the original versions of functions
+that neglected the complex frequency; one can refer to it if we decide this 
+non-Hermitian business is bad!
+
 """
 import numpy as np
 from numpy import linalg as LA
+from scipy import linalg
 import math
 from numpy.polynomial.hermite import *
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 
 class polaritonic:
@@ -62,7 +68,11 @@ class polaritonic:
         self.population_polariton = np.zeros(self.N_basis_states)
         
         self.transformation_vecs_L_to_P = np.zeros((self.N_basis_states, self.N_basis_states),dtype=complex)
+        self.l_transformation_vecs_L_to_P = np.zeros_like(self.transformation_vecs_L_to_P)
         self.polariton_energies = np.zeros(self.N_basis_states,dtype=complex)
+        
+        self.idx = np.zeros(self.N_basis_states)
+        self.lidx = np.zeros(self.N_basis_states)
         
         ### Hamiltonians
         self.H_e()
@@ -75,9 +85,24 @@ class polaritonic:
         
         self.C_polariton[self.initial_state] = 1+0j
         
-        ### transform to polariton basis
-        self.Transform_L_to_P()
+        self.en_up_old = 0+0j
+        self.en_up_new = 0+0j
+        self.en_lp_old = 0+0j
+        self.en_lp_new = 0+0j        
+        self.slope_up_old = 0+0j
+        self.slope_up_new = 0+0j
+        self.slope_lp_old = 0+0j
+        self.slope_lp_new = 0+0j
+        self.curve_up_old = 0+0j
+        self.curve_up_new = 0+0j
+        self.curve_lp_old = 0+0j
+        self.curve_lp_new = 0+0j
+        self.init_slope_and_curve()
         
+        ### transform to polariton basis
+        self.Transform_L_to_P(0.01)
+        ### some helper data to determine consistent ordering of polariton states
+
                 
         ''' Get Total Energy of Initial State!  This will be a complex number! '''        
         self.Energy = self.polariton_energies[self.initial_state]
@@ -411,6 +436,58 @@ class polaritonic:
         
         return tmp_bas
     
+    ''' get initial slopes and curvatures of UP and LP surface.
+        we will assume at the initial point, the LP/UP are in increasing
+        energy order, and we will attempt to pick the ordering
+        such that slope and curvature vary smoothly.'''
+    def init_slope_and_curve(self):
+        dim = 5
+        delta_r = 0.01
+        r_vals = np.array([self.R - 2*delta_r,self.R - 1*delta_r,self.R,self.R + 1*delta_r,self.R + 2*delta_r])
+        LP_E = np.zeros(dim, dtype=complex)
+        UP_E = np.zeros(dim, dtype=complex)
+        ### get a stencil of UP and LP energies
+        for i in range(0,dim):
+            self.R = r_vals[i]
+            self.H_e()
+            self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
+            vals, vecs = LA.eig(self.H_total)
+            idx = vals.argsort()[::1]
+            vals = vals[idx]
+            LP_E[i] = vals[1]
+            UP_E[i] = vals[2]
+        
+        ### fit spline to upper and lower polariton surface
+        LP_spline = InterpolatedUnivariateSpline(r_vals, LP_E, k=3)
+        UP_spline = InterpolatedUnivariateSpline(r_vals, UP_E, k=3)
+        
+        ### differentiate upper and lower polariton surfaces
+        LP_slope = LP_spline.derivative()
+        UP_slope = UP_spline.derivative()
+        
+        ### 2nd derivative of UP and LP surfaces
+        LP_curve = LP_slope.derivative()
+        UP_curve = UP_slope.derivative()
+        
+        ### store quantities
+        self.en_up_old = UP_spline(self.R)
+        self.en_up_new = UP_spline(self.R+delta_r)
+        self.en_lp_old = LP_spline(self.R)
+        self.en_lp_new = LP_spline(self.R+delta_r)
+        self.slope_up_old = UP_slope(self.R)
+        self.slope_up_new = UP_slope(self.R+delta_r)
+        self.slope_lp_old = LP_slope(self.R)
+        self.slope_lp_new = LP_slope(self.R+delta_r)
+        self.curve_up_old = UP_curve(self.R)
+        self.curve_up_new = UP_curve(self.R+delta_r)
+        self.curve_lp_old = LP_slope(self.R)
+        self.curve_lp_new = LP_slope(self.R+delta_r)
+        
+        return 1
+        
+            
+        
+    
     ''' Diagonalize self.H_total, which is typically a non-Hermitian Hamiltonian in the 
         local basis and store the eigenvalues and eigenvectors 
         to the attributes 
@@ -421,19 +498,62 @@ class polaritonic:
         corresponding polariton basis and store it in
         self.D_polariton
         '''
-    def Transform_L_to_P(self):
+    def Transform_L_to_P(self, delta_r):
+        #print(first)
+        ### left vectors
+        lvals, lvecs = linalg.eig(self.H_total, left=True, right=False)
+        ### right vectors
+        #vals, vecs = linalg.eig(polt.H_total, left=False, right=True)
         vals, vecs = LA.eig(self.H_total)
-        ### sort the eigenvectors
+        ### sort the right eigenvectors
         idx = vals.argsort()[::1]
-        vals = vals[idx]
-        v = vecs[:,idx]
+        tvals = vals[idx]
+        
+        ### estimate UP energy based on prior UP energy and slope and curvature
+        self.en_up_new = self.en_up_old + self.slope_up_old * delta_r + 0.5 * self.curve_up_old * delta_r ** 2
+        self.en_lp_new = self.en_lp_old + self.slope_lp_old * delta_r + 0.5 * self.curve_lp_old * delta_r ** 2
+        
+        ### error 1 being smaller implies current odering is good!
+        error_1 = np.abs(self.en_lp_new - tvals[1]) + np.abs(self.en_up_new - tvals[2])
+        ### error 2 being smaller implies we need to switch the UP/LP indices!
+        error_2 = np.abs(self.en_lp_new - tvals[2]) + np.abs(self.en_up_new - tvals[1])
+        if error_2<error_1:
+            UP_idx = idx[1]
+            idx[1] = idx[2]
+            idx[2] = UP_idx
+        
+        v = np.copy(vecs[:,idx])
+        vals = np.copy(vals[idx])
+        
+        ### sort the left eigenvectors
+        lvals = np.copy(lvals[idx])
+        lv = np.copy(lvecs[:,idx])
+        
+        
+        #v = np.copy(vecs)
+        #lv = np.copy(lvecs)
+        
         ### store eigenvectors and eigenvalues
         self.transformation_vecs_L_to_P = np.copy(v)
+        self.l_transformation_vecs_L_to_P = np.copy(lv)
         self.polariton_energies = np.copy(vals)
         ### transform Htot with v^-1
         vt0 = np.dot(LA.inv(v),self.H_total)
         ### finish transformation to polariton basis, Hpl
-        self.H_polariton = np.dot(vt0,v)
+        self.H_polariton = np.copy(np.dot(vt0,v))
+        
+        ### now update the en/slope/curve quantities
+        self.en_lp_new = vals[1]
+        self.en_up_new = vals[2]
+        self.slope_lp_new = (self.en_lp_new-self.en_lp_old)/delta_r
+        self.slope_up_new = (self.en_up_new-self.en_up_old)/delta_r
+        self.curve_lp_new = (self.slope_lp_new-self.slope_lp_old)/delta_r
+        self.curve_up_new = (self.slope_up_new-self.slope_up_old)/delta_r
+        self.slope_lp_old = self.slope_lp_new
+        self.slope_up_old = self.slope_up_new
+        self.curve_lp_old = self.curve_lp_new
+        self.curve_up_old = self.curve_up_new
+        
 
         return 1
     
@@ -482,8 +602,10 @@ class polaritonic:
 
 
     ''' Non-Hermitian FSSH update '''
-    def NH_FSSH(self):
+    def NH_FSSH(self, up_force, lp_force, g0_force, dc_23_re, dc_23_im, dc_32_re, dc_32_im,
+                pes_g0_re, pes_g0_im, pes_lp_re, pes_lp_im, pes_up_re, pes_up_im, pes_e1_re, pes_e1_im):
         ### set up some quantities for surface hopping first!
+        ci = 0+1j
         switch=0
         sign = 1
         starting_act_idx = self.active_index
@@ -496,8 +618,17 @@ class polaritonic:
         gik = np.zeros(self.N_basis_states)
         
         ''' Update nuclear degrees of freedom first '''
-        #  Hellman-Feynman force
-        F_curr = np.real(self.Hellman_Feynman())
+        #  Force from spline - will use the appropriate spline
+        #  based on which surface we are on!
+        if self.active_index==2:
+            F_curr = -1*up_force(self.R)
+        elif self.active_index==1:
+            F_curr = -1*lp_force(self.R)
+        else:
+            F_curr = -1*g0_force(self.R)
+        
+        ### Depricated as of 8/28/2020     
+        #F_curr = np.real(self.Hellman_Feynman())
         
         ### get perturbation of force for Langevin dynamics
         rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
@@ -511,8 +642,19 @@ class polaritonic:
         ### update R
         self.R = self.R + v_halftime * self.dt
         
-        ### Hellman-Feynman force at updated geometry 
-        F_fut = np.real(self.Hellman_Feynman())
+        if self.active_index==2:
+            F_fut = -1*up_force(self.R)
+            self.Energy = pes_up_re(self.R)
+        elif self.active_index==1:
+            F_fut = -1*lp_force(self.R)
+            self.Energy = pes_lp_re(self.R)
+        else:
+            F_fut = -1*g0_force(self.R)
+            self.Energy = pes_g0_re(self.R)
+        
+        ### Depricated as of 8/28/2020
+        #Hellman-Feynman force at updated geometry 
+        #F_fut = np.real(self.Hellman_Feynman())
         
         ### get new random force 
         rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
@@ -533,7 +675,17 @@ class polaritonic:
         
         
         ### Get derivative coupling at updated position!
-        self.Derivative_Coupling()
+        #### depricated as of 8/28/2020
+        #self.Derivative_Coupling()
+        ### now use splines for derivative coupling!
+        self.dc[1,2] = dc_23_re(self.R)+ci*dc_23_im(self.R)
+        self.dc[2,1] = dc_32_re(self.R)+ci*dc_32_im(self.R)
+        
+        ### now use splines to update the polaritonic Hamiltonian
+        self.H_polariton[0,0] = pes_g0_re(self.R)+ci*pes_g0_im(self.R)
+        self.H_polariton[1,1] = pes_lp_re(self.R)+ci*pes_lp_im(self.R)
+        self.H_polariton[2,2] = pes_up_re(self.R)+ci*pes_up_im(self.R)
+        self.H_polariton[3,3] = pes_e1_re(self.R)+ci*pes_e1_im(self.R)
         
         ### populations before updates
         for i in range(0,self.N_basis_states):
@@ -584,12 +736,12 @@ class polaritonic:
             if gik[0]>thresh:
                 self.active_index = 0
                 switch=1
-                print("switched from 3->1")
+                #print("switched from 3->1")
             #### otherwise if cumulative probability of switching to 1 is larger than thresh
             elif (gik[0]+gik[1])>thresh:
                 self.active_index = 1
                 switch=1
-                print("switched from 3->2")
+                #print("switched from 3->2")
             else:
                 switch = 0
         ### are we in state Phi_2?     
@@ -597,7 +749,7 @@ class polaritonic:
             if gik[0]>thresh:
                 self.active_index = 0
                 switch = 1
-                print("switched from 2->1")
+                #print("switched from 2->1")
             else:
                 switch = 0
         else:
@@ -612,8 +764,12 @@ class polaritonic:
             Pj = self.V*self.M
             ### This number should always be positive!
             ### We will discard the imaginary part
-            delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
+            init = starting_act_idx
+            fin = self.active_index
+            ''' deprecated as of 8/28/2020 '''
+            ####delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
             
+            delta_V = np.real(self.H_polariton[init,init] - self.H_polariton[fin, fin])
             ### speed on surface k (new surface)
             Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
             Vk = forward * Vk_mag
@@ -655,7 +811,7 @@ class polaritonic:
         ### get transformation vector at current R
         self.H_e()
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
+        self.Transform_L_to_P(self.dr)
         c = self.transformation_vecs_L_to_P[:,self.active_index]
         ### update energy attribute while we are at it!
         self.Energy = self.polariton_energies[self.active_index]
@@ -707,7 +863,7 @@ class polaritonic:
         self.H_e()
         ### H at forward step
         self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-        self.Transform_L_to_P()
+        self.Transform_L_to_P(self.dr)
 
         
         for j in range(0, self.N_basis_states): #self.N_basis_states):
@@ -767,13 +923,22 @@ class polaritonic:
         - compute both of these surfaces
         - write it to a file with names given by the respective file-name strings
     '''
-    def Write_PES(self, pes_fn, pc_fn):
+    def Write_PES(self, pes_fn, pc_fn, dc_fn, ip_fn):
         
-        rlist = np.linspace(-1.5, 1.5, 5000)
+        rlist = np.linspace(-1.25, 1.25, 500)
+        pes_dr = rlist[1]-rlist[0]
+        
+        ### temporary arrays for old eigenvectors
+        g0_old = np.zeros(self.N_basis_states, dtype='complex')
+        LP_old = np.zeros(self.N_basis_states, dtype='complex')
+        UP_old = np.zeros(self.N_basis_states, dtype='complex')
+        e1_old = np.zeros(self.N_basis_states, dtype='complex')
         
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
         pc_file = open(pc_fn, "w")
+        dc_file = open(dc_fn, "w")
+        ip_file = open(ip_fn, "w")
         
         for r in range(0,len(rlist)):
             wr_str = " "
@@ -783,12 +948,32 @@ class polaritonic:
             pc_str = pc_str + str(self.R) + " "
             self.H_e()
             self.H_total = np.copy(self.H_electronic + self.H_photonic + self.H_interaction)
-            self.Transform_L_to_P()
-            v = self.transformation_vecs_L_to_P
+            self.Transform_L_to_P(pes_dr)
+            v = np.copy(self.transformation_vecs_L_to_P)
+            lv =  np.copy(self.l_transformation_vecs_L_to_P)
             
+            g0 = np.copy(v[:,0])
+            LP = np.copy(v[:,1])
+            UP = np.copy(v[:,2])
+            e1 = np.copy(v[:,3])
+            lg0 = np.copy(lv[:,0])
+            lLP = np.copy(lv[:,1])
+            lUP = np.copy(lv[:,2])
+            le1 = np.copy(lv[:,3])
+            
+            ip_22 = np.dot(np.conj(LP), LP)
+            ip_33 = np.dot(np.conj(UP), UP)
+            ip_23 = np.dot(np.conj(LP), UP)
+            ip_32 = np.dot(np.conj(UP), LP)
+            
+            lLPvrLP = np.sum(np.conj(lLP)-LP)
+            lUPvrUP = np.sum(np.conj(lUP)-UP)
+            ip_str = str(self.R) + " " + str(ip_22) + " " + str(ip_33) + " " + str(ip_23) + " " + str(ip_32)
+            ip_str = ip_str + " " + str(lLPvrLP) + " " + str(lUPvrUP) + "\n"
+            ip_file.write(ip_str)
             for i in range(0,self.N_basis_states):
-                v_i = v[:,i]
-                cv_i = np.conj(v_i)
+                v_i = np.copy(v[:,i])
+                cv_i = np.copy(np.conj(v_i))
                 
                 wr_str = wr_str + str(self.polariton_energies[i]) + " "
                 
@@ -799,6 +984,33 @@ class polaritonic:
                         pc = pc + np.real(cv_i[j] * v_i[j])
                         
                 pc_str = pc_str + str(pc) + " "
+            
+            ### compute derivative couplings
+            if (r>0):
+                #dg0 = (g0-g0_old)/pes_dr
+                dLP = np.copy((LP-LP_old)/pes_dr)
+                dUP = np.copy((UP-UP_old)/pes_dr)
+                #de1 = (e1-e1_old)/pes_dr
+                
+                #d12 = np.dot(np.conj(g0),dLP)
+                #d13 = np.dot(np.conj(g0),dUP)
+                #d14 = np.dot(np.conj(g0),de1)
+                
+                d23 = np.dot(np.conj(LP),dUP)
+                d32 = np.dot(np.conj(UP),dLP)
+                #d24 = np.dot(np.conj(LP),de1)
+                
+                #d34 = np.dot(np.conj(UP),de1)
+                
+                d_str = str(self.R) + " " + str(d23) + " " + str(d32) + "\n"
+                dc_file.write(d_str)
+            g0_old = np.copy(g0)
+            LP_old = np.copy(LP)
+            UP_old = np.copy(UP)
+            e1_old = np.copy(e1)
+                
+                
+                
         
             wr_str = wr_str + "\n"
             pc_str = pc_str + "\n"        
@@ -808,6 +1020,8 @@ class polaritonic:
         ### Close PES file
         pes_file.close()
         pc_file.close()
+        dc_file.close()
+        ip_file.close()
         
         return 1
     
@@ -847,7 +1061,7 @@ class polaritonic:
         
         init_active_index = self.active_index
         hf_file = open(prefix, "w")
-        rlist = np.linspace(-1.5, 1.5, 5000)
+        rlist = np.linspace(-1.0, 1.0, 500)
         
         for r in range(0,len(rlist)):
             wr_str = " "
