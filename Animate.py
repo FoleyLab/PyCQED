@@ -24,12 +24,12 @@ ci = 0+1j
 print(" What is the prefix for your data files?")
 prefix = input()
 
-n_time = 1400
-r_of_t = np.zeros((6,n_time))
+n_time = 1600
+r_of_t = np.zeros((3,n_time))
 t_of_t = np.zeros(n_time)
-e_of_t = np.zeros((6,n_time))
-for i in range(1,6):
-    file_path = "Data/" + prefix + str(i+1) + "_nuc_traj.txt"
+e_of_t = np.zeros((3,n_time))
+for i in range(1,4):
+    file_path = "Data/" + prefix + str(i) + "_nuc_traj.txt"
     #file_path = "Data/test_gam_5.0_meV_nuc_traj.txt"
     print("fp is ",file_path)
     a = np.loadtxt(file_path)
@@ -39,7 +39,7 @@ for i in range(1,6):
     r_of_t[i-1,:] = a[:,1]
     e_of_t[i-1,:] = a[:,2]
 
-dt = 0.06
+dt = 0.12
 
 rlist = np.zeros(1000)
 PPES = np.zeros((1000,4))

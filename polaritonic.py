@@ -209,7 +209,7 @@ class polaritonic:
         if 'Friction' in args:
             self.gamma_nuc = args['Friction']
         else:
-            self.gamma_nuc = 0.000011
+            self.gamma_nuc = 0.000012
         ### read mass
         if 'Mass' in args:
             self.M = args['Mass']
@@ -219,11 +219,11 @@ class polaritonic:
         if 'Time_Step' in args:
             self.dt = args['Time_Step']
         else:
-            self.dt = 0.025
+            self.dt = 0.12
         if 'Space_Step' in args:
             self.dr = args['Space_Step']
         else:
-            self.dr = 0.0005
+            self.dr = 0.001
         ### how many photonic modes
         if 'Number_of_Photons' in args:
             self.NPhoton = args['Number_of_Photons']
@@ -444,8 +444,8 @@ class polaritonic:
         dim = 5
         delta_r = 0.01
         r_vals = np.array([self.R - 2*delta_r,self.R - 1*delta_r,self.R,self.R + 1*delta_r,self.R + 2*delta_r])
-        LP_E = np.zeros(dim, dtype=complex)
-        UP_E = np.zeros(dim, dtype=complex)
+        LP_E = np.zeros(dim)
+        UP_E = np.zeros(dim)
         ### get a stencil of UP and LP energies
         for i in range(0,dim):
             self.R = r_vals[i]
@@ -454,8 +454,8 @@ class polaritonic:
             vals, vecs = LA.eig(self.H_total)
             idx = vals.argsort()[::1]
             vals = vals[idx]
-            LP_E[i] = vals[1]
-            UP_E[i] = vals[2]
+            LP_E[i] = np.real(vals[1])
+            UP_E[i] = np.real(vals[2])
         
         ### fit spline to upper and lower polariton surface
         LP_spline = InterpolatedUnivariateSpline(r_vals, LP_E, k=3)
@@ -631,7 +631,7 @@ class polaritonic:
         #F_curr = np.real(self.Hellman_Feynman())
         
         ### get perturbation of force for Langevin dynamics
-        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1) * 0
     
         ### get acceleration
         ### Langevin acceleration
@@ -657,7 +657,7 @@ class polaritonic:
         #F_fut = np.real(self.Hellman_Feynman())
         
         ### get new random force 
-        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1) * 0
         ### get acceleration
         a_fut = (F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
         ### get updated velocity
@@ -732,12 +732,10 @@ class polaritonic:
         if (self.active_index==2):
 
             #### switch to 0 if probability is larger than thresh
-            ''' ignore switches to surface 0
             if gik[0]>thresh:
                 self.active_index = 0
                 switch=1
                 #print("switched from 3->1")
-            '''
             #### otherwise if cumulative probability of switching to 1 is larger than thresh
             if (gik[0]+gik[1])>thresh:
                 self.active_index = 1
@@ -746,7 +744,6 @@ class polaritonic:
             else:
                 switch = 0
         ### are we in state Phi_2? 
-        ''' ignore switches to surface 0 
         elif (self.active_index==1):
             if gik[0]>thresh:
                 self.active_index = 0
@@ -754,9 +751,8 @@ class polaritonic:
                 #print("switched from 2->1")
             else:
                 switch = 0
-        '''
-        #else:
-        #    switch = 0 
+        else:
+            switch = 0 
         ### if we switched surfaces, we need to check some things about the
         ### momentum on the new surface... this comes from consideration of
         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.

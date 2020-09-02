@@ -68,8 +68,8 @@ dc_fn = "Data/" + prefix + "_dc.txt"
 ### inner-product data
 ip_fn = "Data/" + prefix + "_ip.txt"
 
-### Number of updates!
-N_time = 700000 #000000
+### Number of update
+N_time =  800000 #000000
 #N_time = 400000
 ### N_thresh controls when you start taking the average position
 N_thresh = int( N_time / 4)
@@ -224,7 +224,12 @@ for j in range(0,N_repeats):
         
         ### Uncomment if you wish to write trajectory data!
         if N_repeats == 1 and i%500==0:
-            
+            #print("H")
+            #print(polt.H_polariton)
+            #print("C")
+            #print(polt.C_polariton)
+            #print("dc")
+            #print(polt.dc)
             polt.Write_Trajectory(i, nuclear_file, electronic_file)
             #print("repeat is ", j+1,"active index is ",polt.active_index)
             
