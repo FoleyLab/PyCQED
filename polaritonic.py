@@ -177,14 +177,14 @@ class polaritonic:
         ### default is to scale!
         else:
             self.scale = 'True'
-        print("scaling condition",self.scale)
+        #print("scaling condition",self.scale)
         ### are we disregarding the imaginary part of the derivative coupling
         if 'Complex_Derivative_Coupling' in args:
             self.complex_dc = args['Complex_Derivative_Coupling']
         ### default is to keep complex part!
         else:
             self.complex_dc = 'True'
-        print("complex condition",self.complex_dc)
+        #print("complex condition",self.complex_dc)
         ### are we treating the photon frequencies as complex quantities?
         if 'Complex_Frequency' in args: 
             self.Complex_Frequency = args['Complex_Frequency']
