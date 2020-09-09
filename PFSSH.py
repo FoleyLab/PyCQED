@@ -65,8 +65,11 @@ pc_fn = "Data/" + prefix + '_photon_contribution.txt'
 hf_fn = "Data/" + prefix + "_hf.txt"
 ### derivative coupling data
 dc_fn = "Data/" + prefix + "_dc.txt"
+### perturbative approimation to dc data
+ptdc_fn = "Data/" + prefix + "_ptdc.txt"
 ### inner-product data
 ip_fn = "Data/" + prefix + "_ip.txt"
+
 
 ### Number of update
 N_time =  800000 #000000
@@ -126,7 +129,7 @@ polt.Derivative_Coupling()
 ### New way of doing things is to write all this stuff to file 
 ### read the relevant quantities and fit splines to the data...
 ### the splines will then be passed to NH_FSSH
-polt.Write_PES(pes_fn, pc_fn, dc_fn, ip_fn)
+polt.Write_PES(pes_fn, pc_fn, dc_fn, ptdc_fn, ip_fn)
 
 ### fit PES splines
 pes_v = np.loadtxt(pes_fn, dtype=complex)

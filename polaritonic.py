@@ -922,7 +922,7 @@ class polaritonic:
         - compute both of these surfaces
         - write it to a file with names given by the respective file-name strings
     '''
-    def Write_PES(self, pes_fn, pc_fn, dc_fn, ip_fn):
+    def Write_PES(self, pes_fn, pc_fn, dc_fn, ptdc_fn, ip_fn):
         
         rlist = np.linspace(-1.25, 1.25, 1000)
         pes_dr = rlist[1]-rlist[0]
@@ -933,12 +933,15 @@ class polaritonic:
         UP_old = np.zeros(self.N_basis_states, dtype='complex')
         e1_old = np.zeros(self.N_basis_states, dtype='complex')
         
+        H_old = np.zeros((self.N_basis_states, self.N_basis_states), dtype=complex)
+        
         ### Get PES of polaritonic system and write to file pes_fn
         pes_file = open(pes_fn, "w")
         pc_file = open(pc_fn, "w")
         dc_file = open(dc_fn, "w")
+        ptdc_file = open(ptdc_fn, "w")
         ip_file = open(ip_fn, "w")
-        
+
         for r in range(0,len(rlist)):
             wr_str = " "
             pc_str = " "
@@ -986,6 +989,7 @@ class polaritonic:
             
             ### compute derivative couplings
             if (r>0):
+                ### first the "true" way, e.g. <LP | d/dR UP>
                 #dg0 = (g0-g0_old)/pes_dr
                 dLP = np.copy((LP-LP_old)/pes_dr)
                 dUP = np.copy((UP-UP_old)/pes_dr)
@@ -1003,6 +1007,21 @@ class polaritonic:
                 
                 d_str = str(self.R) + " " + str(d23) + " " + str(d32) + "\n"
                 dc_file.write(d_str)
+                
+                ### Now the perturbative way!
+                ### derivative of H
+                Vlp = self.polariton_energies[1]
+                Vup = self.polariton_energies[2]
+                Hp = np.copy((self.H_total - H_old)/pes_dr)
+                tmp_23 = np.dot(Hp, UP)
+                num_pt_23 = np.dot(np.conj(LP), tmp_23)
+                tmp_32 = np.dot(Hp, LP)
+                num_pt_32 = np.dot(np.conj(UP), tmp_32)
+                pt_32 = -1 * num_pt_32/(Vlp - Vup)
+                pt_23 = -1 * num_pt_23/(Vup - Vlp)
+                pt_str = str(self.R) + " " + str(pt_23) + " " + str(pt_32) + "\n"
+                ptdc_file.write(pt_str)
+
             g0_old = np.copy(g0)
             LP_old = np.copy(LP)
             UP_old = np.copy(UP)
@@ -1021,6 +1040,7 @@ class polaritonic:
         pc_file.close()
         dc_file.close()
         ip_file.close()
+        ptdc_file.close()
         
         return 1
     
