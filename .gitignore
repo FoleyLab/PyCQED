@@ -1,3 +1,7 @@
+*.out
+*.png
+*.eps
+*.pptx
 *.pyc
 .ipynb_checkpoints/*
 *.txt

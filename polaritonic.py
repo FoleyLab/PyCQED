@@ -924,7 +924,7 @@ class polaritonic:
     '''
     def Write_PES(self, pes_fn, pc_fn, dc_fn, ptdc_fn, ip_fn):
         
-        rlist = np.linspace(-1.25, 1.25, 1000)
+        rlist = np.linspace(-1.25, 1.25, 2000)
         pes_dr = rlist[1]-rlist[0]
         
         ### temporary arrays for old eigenvectors
@@ -977,7 +977,7 @@ class polaritonic:
                 v_i = np.copy(v[:,i])
                 cv_i = np.copy(np.conj(v_i))
                 
-                wr_str = wr_str + str(self.polariton_energies[i]) + " "
+                wr_str = wr_str + str(np.real(self.polariton_energies[i])) + " "
                 
                 ### loop over all photon indices in basis states
                 pc = 0
