@@ -1,0 +1,37 @@
+# The scenario of the legacy PFSSH.py / run.sh: 1-D double well, Rabi coupling, one photon.
+#   python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 ...
+[model]
+entry_point = "pycqed.models:DoubleWellModel"
+
+[cavity]
+hamiltonian = "Rabi"
+solver = "numerical"
+omega_eV = 2.45
+gamma_meV = 1.0
+g_eV = 0.02                 # legacy coupling strength; lambda = g / (sqrt(omega/2) mu_ref)
+mu_ref = 1.0                # |mu_eg| of DoubleWellModel
+n_fock = 1
+
+[dynamics]
+dt = 0.12
+n_steps = 800000
+n_substeps = 5
+rescale = "nac"
+frustrated = "keep"
+photon_loss = true
+friction = 0.000012
+temperature = 0.0           # the legacy code multiplied its random force by 0
+
+[initial]
+sampling = "wigner_1d"
+center = -0.7
+force_constant = 0.31246871517560126
+masses = 1009883.0
+active = 2                  # UP
+
+[run]
+n_traj = 1
+seed = 1
+stride = 500
+output_dir = "Data/legacy"
+prefix = "double_well"

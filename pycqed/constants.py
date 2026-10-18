@@ -1,0 +1,11 @@
+"""Physical constants and unit conversions (CODATA 2018). Everything internal is atomic units."""
+
+HARTREE_TO_EV = 27.211386245988
+EV_TO_HARTREE = 1.0 / HARTREE_TO_EV
+MEV_TO_HARTREE = 1.0e-3 * EV_TO_HARTREE
+
+AU_TIME_TO_FS = 2.4188843265857e-2
+FS_TO_AU_TIME = 1.0 / AU_TIME_TO_FS
+
+AMU_TO_AU_MASS = 1822.888486209
+KB_HARTREE_PER_K = 3.166811563e-6

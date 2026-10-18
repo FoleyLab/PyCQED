@@ -1,0 +1,35 @@
+# Pauli-Fierz polaritonic FSSH for the mock ML diatomic (values-only model -> finite-difference gradients).
+[model]
+entry_point = "examples.mock_ml_model:predict"
+fd_step = 1e-4
+
+[cavity]
+hamiltonian = "PF"          # "JC", "Rabi" or "PF"
+solver = "numerical"        # "analytic" is available for JC only
+omega_eV = 2.85
+gamma_meV = 5.0
+coupling = 0.02             # lambda, a.u.
+polarization = [0.0, 0.0, 1.0]
+n_fock = 2
+
+[dynamics]
+dt = 2.0
+n_steps = 2000
+n_substeps = 20
+rescale = "nac"
+frustrated = "reverse"
+photon_loss = true
+
+[initial]
+sampling = "fixed"
+R = [0.0, 0.0, 0.0, 0.0, 0.0, 1.95]
+P = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+masses = [1837.15, 1837.15, 1837.15, 34634.91, 34634.91, 34634.91]
+active = 2                  # states sorted by Re E at t = 0: 0 = ground, 1 = LP, 2 = UP
+
+[run]
+n_traj = 4
+seed = 2026
+stride = 10
+output_dir = "Data/mock_ml"
+prefix = "diatomic"
