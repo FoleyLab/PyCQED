@@ -1,7 +1,7 @@
 """Run the patched legacy PFSSH.py on the matched initial conditions, in parallel.
 
-``--legacy-dir`` is a scratch copy of polaritonic.py / PFSSH.py with
-``legacy_fixes.patch`` applied (never the files in the repository root).  The
+``--legacy-dir`` is a scratch copy of ARCHIVE/polaritonic.py / ARCHIVE/PFSSH.py with
+``legacy_fixes.patch`` applied (never the files in ARCHIVE/ themselves).  The
 ensemble is split into chunks, one PFSSH.py process per chunk, and merged into
 ``legacy[_smooth].npz`` in ``--out``.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-# python PFSSH.py Scale_True Real_DC N gamma_meV omega_eV g_eV prefix  (run.sh / the brief)
+# python PFSSH.py Scale_True Real_DC N gamma_meV omega_eV g_eV prefix  (ARCHIVE/run.sh / the brief)
 SCENARIO = ["Scale_True", "Real_DC", None, "1.0", "2.45", "0.02"]
 
 

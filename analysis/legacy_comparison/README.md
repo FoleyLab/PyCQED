@@ -13,12 +13,12 @@ After that the ensembles diverge, and each divergence traces to an intended algo
 
 | | |
 |---|---|
-| Scenario | double well (`DoubleWellModel` = legacy `E_of_R`), Rabi coupling, `n_fock = 1`, ω = 2.45 eV, g = 0.02 eV, γ = 1 meV, start on UP |
+| Scenario | double well (`DoubleWellModel` = legacy `ARCHIVE/polaritonic.py:E_of_R`), Rabi coupling, `n_fock = 1`, ω = 2.45 eV, g = 0.02 eV, γ = 1 meV, start on UP |
 | Nuclei | M = 1009883, dt = 0.12 au, BBK friction 1.2e-5 au, T = 0 |
 | Ensemble | 100 trajectories, 400 000 steps each (48 000 au = 1.16 ps), sampled every 500 steps |
 | Initial conditions | Wigner samples from `pycqed` (`examples/legacy_double_well.toml`, seed 1). The *same* (R, P) list (`ics.txt`) is fed to both codes. |
 | New code | `examples/legacy_double_well.toml` with `n_steps = 400000` and `n_traj = 100`. `run_new.py` uses the CLI's per-trajectory RNG streams, run in parallel. |
-| Legacy code | scratch copies of `polaritonic.py` and `PFSSH.py` with `legacy_fixes.patch` applied (`run_legacy.py`). The repository originals are untouched. |
+| Legacy code | scratch copies of `ARCHIVE/polaritonic.py` and `ARCHIVE/PFSSH.py` with `legacy_fixes.patch` applied (`run_legacy.py`; the patch paths are relative to the copy directory). The repository originals are untouched. |
 
 ### Legacy fixes applied to the copy (`legacy_fixes.patch`)
 
@@ -136,7 +136,7 @@ The ratio between them is N / p_active = 1 / (normalised population of the activ
 ## Reproduce
 
 ```bash
-W=$PWD; S=$(mktemp -d); mkdir -p $S/legacy/Data && cp polaritonic.py PFSSH.py $S/legacy/
+W=$PWD; S=$(mktemp -d); mkdir -p $S/legacy/Data && cp ARCHIVE/polaritonic.py ARCHIVE/PFSSH.py $S/legacy/
 (cd $S/legacy && patch -p1 < "$W/analysis/legacy_comparison/legacy_fixes.patch")
 python analysis/legacy_comparison/run_new.py --n-traj 100 --n-steps 400000 --workers 10 --out $S/runs
 python analysis/legacy_comparison/run_legacy.py --legacy-dir $S/legacy --ics $S/runs/ics.txt --n-steps 400000 --out $S/runs
