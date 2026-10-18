@@ -1,0 +1,241 @@
+diff -ru a/PFSSH.py b/PFSSH.py
+--- a/PFSSH.py	2026-10-18 09:40:26
++++ b/PFSSH.py	2026-10-18 09:40:26
+@@ -73,6 +73,16 @@
+ 
+ ### Number of update
+ N_time =  800000 #000000
++### comparison harness (not a fix): optional initial conditions, N_time, output file, seed
++ic_fn = sys.argv[8] if len(sys.argv) > 8 else None
++if len(sys.argv) > 9:
++    N_time = int(sys.argv[9])
++out_npz = sys.argv[10] if len(sys.argv) > 10 else None
++if len(sys.argv) > 11:
++    np.random.seed(int(sys.argv[11]))
++stride = 500
++ics = np.loadtxt(ic_fn, ndmin=2) if ic_fn else None
++rec = dict(t=[], R=[], V=[], active=[], pop=[], hops=[], frustrated=[], traj=[])
+ #N_time = 400000
+ ### N_thresh controls when you start taking the average position
+ N_thresh = int( N_time / 4)
+@@ -91,7 +101,8 @@
+         'Initial_Velocity': vi_init,
+         'Mass': 1009883,
+         ### temperature in a.u.
+-        'Temperature': 0.00095,
++        ### FIX A4 (with polaritonic.py): run at T = 0 to match the new code
++        'Temperature': 0.0,
+         ### friction in a.u.
+         'Friction': 0.000012,
+         ### specify initial state as a human would, not a computer...
+@@ -176,6 +187,10 @@
+     
+     
+     polt.Initialize_Phase_Space()
++    if ics is not None:
++        ### harness: matched Wigner initial conditions (R, P) from the new code
++        polt.R = ics[j, 0]
++        polt.V = ics[j, 1] / polt.M
+     
+     ri_init = polt.R
+     vi_init = polt.V
+@@ -184,6 +199,17 @@
+     polt.active_index = 2 
+     polt.initial_state = 2
+     polt.Energy = re_UP_spline(polt.R)
++    ### FIX A5: reset the wavefunction and populations at the start of every repeat
++    polt.C_polariton = np.zeros(polt.N_basis_states, dtype=complex)
++    polt.C_polariton[polt.initial_state] = 1+0j
++    polt.population_polariton = np.zeros(polt.N_basis_states)
++    polt.population_polariton[polt.initial_state] = 1.0
++    polt.hop_counts = {}
++    polt.hop_log = []
++    polt.n_frustrated = 0
++    polt.step_counter = 0
++    traj_rec = dict(t=[0.0], R=[polt.R], V=[polt.V], active=[polt.active_index],
++                    pop=[polt.population_polariton.copy()])
+     print(polt.R)
+     print(polt.V)
+     print(polt.Energy)
+@@ -236,6 +262,9 @@
+             polt.Write_Trajectory(i, nuclear_file, electronic_file)
+             #print("repeat is ", j+1,"active index is ",polt.active_index)
+             
++        if i % stride == 0:
++            traj_rec['t'].append(i*polt.dt); traj_rec['R'].append(polt.R); traj_rec['V'].append(polt.V)
++            traj_rec['active'].append(polt.active_index); traj_rec['pop'].append(polt.population_polariton.copy())
+         ### After a while, start accumulating the position so you can average it!
+         if i>N_thresh:
+             r_array.append(polt.R)
+@@ -262,7 +291,18 @@
+         iso_res = 0
+     
+         
+-    print(time_taken/60., ri_init, vi_init, gamp, omp, gp, avg_r, iso_res)
++    print(time_taken/60., ri_init, vi_init, gamp, omp, gp, avg_r, iso_res, polt.hop_counts, flush=True)
++    for k in ('t', 'R', 'V', 'active', 'pop'):
++        rec[k].append(np.array(traj_rec[k]))
++    rec['hops'].append(np.array(polt.hop_log, dtype=int).reshape(-1, 3))
++    rec['frustrated'].append(polt.n_frustrated)
++    rec['traj'].append(j)
++    if out_npz:
++        np.savez_compressed(out_npz, t=rec['t'][0], R=np.array(rec['R']), V=np.array(rec['V']),
++                            active=np.array(rec['active']), pop=np.array(rec['pop']),
++                            frustrated=np.array(rec['frustrated']),
++                            hops=np.concatenate([np.column_stack([np.full(len(h), n), h]) for n, h in enumerate(rec['hops'])]) if rec['hops'] else np.zeros((0, 4), int),
++                            ics=ics[:len(rec['R'])] if ics is not None else np.zeros((0, 2)))
+     
+ if N_repeats==1:
+     electronic_file.close()
+diff -ru a/polaritonic.py b/polaritonic.py
+--- a/polaritonic.py	2026-10-18 09:40:26
++++ b/polaritonic.py	2026-10-18 09:40:26
+@@ -128,6 +128,12 @@
+         self.C2 = np.zeros_like(self.C_local)
+         self.C3 = np.zeros_like(self.C_local)
+         self.C4 = np.zeros_like(self.C_local)
++        import os
++        self.smooth_gauge = os.environ.get('LEGACY_SMOOTH_GAUGE', '0') == '1'
++        self.hop_counts = {}
++        self.hop_log = []
++        self.n_frustrated = 0
++        self.step_counter = 0
+         
+         
+         
+@@ -631,7 +637,9 @@
+         #F_curr = np.real(self.Hellman_Feynman())
+         
+         ### get perturbation of force for Langevin dynamics
+-        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1) * 0
++        ### FIX A4: random force no longer multiplied by 0; it is controlled by self.T
++        ### (the comparison runs at T = 0, so it vanishes anyway)
++        rp_curr = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+     
+         ### get acceleration
+         ### Langevin acceleration
+@@ -657,9 +665,14 @@
+         #F_fut = np.real(self.Hellman_Feynman())
+         
+         ### get new random force 
+-        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1) * 0
++        ### FIX A4: random force no longer multiplied by 0; it is controlled by self.T
++        ### (the comparison runs at T = 0, so it vanishes anyway)
++        rp_fut = np.sqrt(2 * self.T * self.gamma_nuc * self.M / self.dt) * np.random.normal(0,1)
+         ### get acceleration
+-        a_fut = (F_fut + rp_fut) / self.M - self.gamma_nuc * v_halftime
++        ### FIX B1 (found in this comparison): BBK second half-step. The friction is already
++        ### applied implicitly by the 1/(1 + gamma dt/2) factor below; subtracting
++        ### gamma*v_halftime here as well made the effective friction ~1.5 gamma.
++        a_fut = (F_fut + rp_fut) / self.M
+         ### get updated velocity
+         ### vv update
+         ###v_fut = v_curr + 1/2 * (a_curr + a_fut)*dt
+@@ -737,7 +750,8 @@
+                 switch=1
+                 #print("switched from 3->1")
+             #### otherwise if cumulative probability of switching to 1 is larger than thresh
+-            if (gik[0]+gik[1])>thresh:
++            ### FIX A2: elif, so an UP->G hop is not overwritten by UP->LP
++            elif (gik[0]+gik[1])>thresh:
+                 self.active_index = 1
+                 switch=1
+                 #print("switched from 3->2")
+@@ -758,51 +772,28 @@
+         ### Eq. (7) and (8) on page 392 of Subotnik's Ann. Rev. Phys. Chem.
+         ### on Surface Hopping
+         ### check to see if we want to scale or not by value of self.scale!
+-        if switch and self.active_index==1 and self.scale:
+-            ### momentum on surface j (starting surface)
+-            Pj = self.V*self.M
+-            ### This number should always be positive!
+-            ### We will discard the imaginary part
++        ### FIX A3: energy-conserving 1-D rescale P' = sign(P) sqrt(P^2 - 2 M dE).
++        ### Hops into G (index 0) model photon loss and are not rescaled (the photon
++        ### carries the energy away); a frustrated hop (P^2 < 2 M dE) is cancelled
++        ### and P is left unchanged.
++        if switch and self.active_index != starting_act_idx and self.active_index != 0 and self.scale:
+             init = starting_act_idx
+             fin = self.active_index
+-            ''' deprecated as of 8/28/2020 '''
+-            ####delta_V = np.real(self.Delta_V_jk[starting_act_idx,self.active_index])
+-            
+-            delta_V = np.real(self.H_polariton[init,init] - self.H_polariton[fin, fin])
+-            ### speed on surface k (new surface)
+-            Vk_mag = np.sqrt(2 * self.M * (Pj**2/(2*self.M) + delta_V)) / self.M
+-            Vk = forward * Vk_mag
+-            
+-            Pk = self.M * Vk
+-            ### First estimate of Delta P
+-            Delta_P = Pk - Pj
+-        
+-            #print("DP ",Delta_P,"Pj ", Pj,"Pk ", Pk, "dc_ij ", self.dc[starting_act_idx, self.active_index])    
+-            ### We will re-scale the updated momentum so that the following is true: 
+-            ### Pj = Pk + deltaP * dc
+-            ### if dc vanishes (as will happen for j->0), do not rescale the velocity
+-            ### why?  bc these transitions are due to the photon leaving the cavity, 
+-            ### and the photon should carry energy away with it so we don't want to conserve energy!
+-            if np.isclose(self.dc[starting_act_idx, self.active_index],0+0j):
+-                self.V = Pj/self.M
+-            elif self.active_index==0:
+-                self.V = Pj/self.M
+-            ### if derivative coupling is positive, then this hop cannot happen!
+-            elif np.real(self.dc[starting_act_idx, self.active_index])>0:
+-                self.active_index = starting_act_idx
+-                self.V = Pj/self.M
+-            ### hops with negative derivative coupling are allowed, rescale the velocity
+-            ### appropriately.
++            Pj = self.V*self.M
++            dE = np.real(self.H_polariton[fin, fin] - self.H_polariton[init, init])
++            disc = Pj**2 - 2*self.M*dE
++            if disc < 0:
++                self.active_index = init
++                self.n_frustrated += 1
+             else:
+-                ### Re-scale Delta P with derivative coupling vector
+-                scaled_Delta_P = Delta_P / np.real(self.dc[starting_act_idx, self.active_index])
+-                ### now compute the re-scaled Pk
+-                Pk_rescaled = Pj - scaled_Delta_P
+-                ### assign the corresponding re-scaled velocity to self.V
+-                self.V = Pk_rescaled / self.M
+-                #print("Pj ", Pj,"Pk ", Pk, "Pk_rs", Pk_rescaled, "dc_ij ", self.dc[starting_act_idx, self.active_index])
+-                         
+-        
++                self.V = np.sign(Pj)*np.sqrt(disc)/self.M
++        ### instrumentation (not a fix): count hops by (from, to)
++        if self.active_index != starting_act_idx:
++            key = (starting_act_idx, self.active_index)
++            self.hop_counts[key] = self.hop_counts.get(key, 0) + 1
++            self.hop_log.append((self.step_counter, starting_act_idx, self.active_index))
++        self.step_counter += 1
++
+         return 1 
+ 
+     ''' Computes Hellman-Feynman force '''
+@@ -954,6 +945,15 @@
+             v = np.copy(self.transformation_vecs_L_to_P)
+             lv =  np.copy(self.l_transformation_vecs_L_to_P)
+             
++            ### OPTION (diagnostic, env LEGACY_SMOOTH_GAUGE=1): parallel-transport gauge,
++            ### i.e. rotate each eigenvector's phase to have real positive overlap with
++            ### the previous grid point.  Without it LAPACK fixes the phase by making the
++            ### largest component real, which flips the sign of UP or LP exactly at the
++            ### LP/UP avoided crossings and makes the finite-difference NAC change sign there.
++            if self.smooth_gauge and r > 0:
++                for col, old in enumerate((g0_old, LP_old, UP_old, e1_old)):
++                    ov = np.dot(np.conj(old), v[:, col])
++                    v[:, col] = v[:, col] * np.conj(ov) / abs(ov)
+             g0 = np.copy(v[:,0])
+             LP = np.copy(v[:,1])
+             UP = np.copy(v[:,2])
+@@ -977,7 +977,9 @@
+                 v_i = np.copy(v[:,i])
+                 cv_i = np.copy(np.conj(v_i))
+                 
+-                wr_str = wr_str + str(np.real(self.polariton_energies[i])) + " "
++                ### FIX A1: keep the imaginary (decay) part of the polariton energies
++                z = self.polariton_energies[i]
++                wr_str = wr_str + '{:.17e}{:+.17e}j'.format(np.real(z), np.imag(z)) + " "
+                 
+                 ### loop over all photon indices in basis states
+                 pc = 0

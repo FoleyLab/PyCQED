@@ -1,0 +1,11 @@
+  v (au)  LZ P_diab | code                             G      LP      UP    norm
+   3e-05      0.209 | legacy, LAPACK-gauge NAC    0.0000  0.2438  0.6726  0.9164
+   3e-05      0.209 | legacy, smooth-gauge NAC    0.0000  0.2231  0.7143  0.9373
+   3e-05      0.209 | pycqed                      0.0000  0.2235  0.7138  0.9373
+   6e-05      0.458 | legacy, LAPACK-gauge NAC    0.0000  0.2514  0.6814  0.9328
+   6e-05      0.458 | legacy, smooth-gauge NAC    0.0000  0.4396  0.5389  0.9785
+   6e-05      0.458 | pycqed                      0.0000  0.4401  0.5383  0.9784
+   9e-05      0.594 | legacy, LAPACK-gauge NAC    0.0000  0.1867  0.7461  0.9328
+   9e-05      0.594 | legacy, smooth-gauge NAC    0.0000  0.6258  0.3645  0.9903
+   9e-05      0.594 | pycqed                      0.0000  0.6262  0.3641  0.9902
+(diabatic crossing at R = -0.5885; P_diab is the LZ probability to end on LP)

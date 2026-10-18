@@ -1,0 +1,215 @@
+{
+  "n_traj": 100,
+  "n_steps": 400000,
+  "t_final_fs": 1161.0644767669792,
+  "new": {
+    "hops": {
+      "frustrated LP->UP": 35,
+      "hop LP->UP": 136,
+      "hop UP->LP": 214,
+      "jump LP->G": 33,
+      "jump UP->G": 12,
+      "total": 430,
+      "trajectories": 100
+    },
+    "counters": {
+      "hops": 350,
+      "frustrated": 35,
+      "jumps": 45,
+      "phase_flips": 0
+    },
+    "fractions": {
+      "100 fs": {
+        "G": 0.04,
+        "LP": 0.54,
+        "UP": 0.42
+      },
+      "250 fs": {
+        "G": 0.13,
+        "LP": 0.46,
+        "UP": 0.41
+      },
+      "501 fs": {
+        "G": 0.22,
+        "LP": 0.57,
+        "UP": 0.21
+      },
+      "750 fs": {
+        "G": 0.36,
+        "LP": 0.49,
+        "UP": 0.15
+      },
+      "1161 fs": {
+        "G": 0.45,
+        "LP": 0.45,
+        "UP": 0.1
+      }
+    },
+    "mean_R": {
+      "100 fs": -0.4039,
+      "250 fs": 0.0199,
+      "501 fs": 0.0837,
+      "750 fs": -0.1237,
+      "1161 fs": 0.0822
+    },
+    "median_first_event_fs": 62.028418340334724,
+    "n_never_left_UP": 0
+  },
+  "legacy": {
+    "hops": {
+      "hop UP->LP": 80,
+      "sink LP->G": 64,
+      "sink UP->G": 20,
+      "total": 164,
+      "trajectories": 100
+    },
+    "counters": {
+      "frustrated": 0
+    },
+    "fractions": {
+      "100 fs": {
+        "G": 0.24,
+        "LP": 0.17,
+        "UP": 0.59
+      },
+      "250 fs": {
+        "G": 0.4,
+        "LP": 0.32,
+        "UP": 0.28
+      },
+      "501 fs": {
+        "G": 0.61,
+        "LP": 0.35,
+        "UP": 0.04
+      },
+      "750 fs": {
+        "G": 0.78,
+        "LP": 0.21,
+        "UP": 0.01
+      },
+      "1161 fs": {
+        "G": 0.84,
+        "LP": 0.16,
+        "UP": 0.0
+      }
+    },
+    "mean_R": {
+      "100 fs": -0.4622,
+      "250 fs": -0.5319,
+      "501 fs": -0.203,
+      "750 fs": -0.1531,
+      "1161 fs": -0.1125
+    },
+    "median_first_event_fs": 143.8515346789169,
+    "n_never_left_UP": 0
+  },
+  "legacy_smooth": {
+    "hops": {
+      "hop UP->LP": 91,
+      "sink LP->G": 62,
+      "sink UP->G": 9,
+      "total": 162,
+      "trajectories": 100
+    },
+    "counters": {
+      "frustrated": 0
+    },
+    "fractions": {
+      "100 fs": {
+        "G": 0.07,
+        "LP": 0.57,
+        "UP": 0.36
+      },
+      "250 fs": {
+        "G": 0.24,
+        "LP": 0.65,
+        "UP": 0.11
+      },
+      "501 fs": {
+        "G": 0.46,
+        "LP": 0.53,
+        "UP": 0.01
+      },
+      "750 fs": {
+        "G": 0.61,
+        "LP": 0.39,
+        "UP": 0.0
+      },
+      "1161 fs": {
+        "G": 0.71,
+        "LP": 0.29,
+        "UP": 0.0
+      }
+    },
+    "mean_R": {
+      "100 fs": -0.3945,
+      "250 fs": 0.1228,
+      "501 fs": 0.1329,
+      "750 fs": -0.095,
+      "1161 fs": 0.3892
+    },
+    "median_first_event_fs": 60.97039833591916,
+    "n_never_left_UP": 0
+  },
+  "pre_event_R_max_abs_diff_bohr": {
+    "max": 3.253137350867075e-05,
+    "median": 2.095558553960597e-06,
+    "n": 100
+  },
+  "new_minus": {
+    "legacy": {
+      "max_abs_fraction_diff": {
+        "G": 0.47,
+        "LP": 0.51,
+        "UP": 0.36
+      },
+      "max_z": {
+        "G": 7.6,
+        "LP": 8.5,
+        "UP": 6.2
+      },
+      "max_abs_meanR_diff": 0.5859
+    },
+    "legacy_smooth": {
+      "max_abs_fraction_diff": {
+        "G": 0.34,
+        "LP": 0.24,
+        "UP": 0.45
+      },
+      "max_z": {
+        "G": 5.2,
+        "LP": 3.5,
+        "UP": 8.9
+      },
+      "max_abs_meanR_diff": 0.3776
+    }
+  },
+  "diagnostics": {
+    "new": {
+      "upward_LP_to_UP_hops": 136,
+      "trajectories_with_upward_hop": 79
+    },
+    "legacy": {
+      "mean_norm_at_100fs": 0.899,
+      "mean_norm_final": 0.434,
+      "sink_hops": 84,
+      "sink_hops_first_100fs": 24,
+      "sink_hops_within_0p03_bohr_of_a_crossing": 33,
+      "sink_rate_over_jump_rate_N_over_p_active": {
+        "median": 1.33,
+        "mean": 2.33
+      }
+    },
+    "legacy_smooth": {
+      "mean_norm_at_100fs": 0.972,
+      "mean_norm_final": 0.528,
+      "sink_hops": 71,
+      "sink_hops_first_100fs": 7,
+      "sink_hops_within_0p03_bohr_of_a_crossing": 10,
+      "sink_rate_over_jump_rate_N_over_p_active": {
+        "median": 1.55,
+        "mean": 3.55
+      }
+    }
+  }
+}
