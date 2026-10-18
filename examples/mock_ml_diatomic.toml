@@ -31,5 +31,5 @@ active = 2                  # states sorted by Re E at t = 0: 0 = ground, 1 = LP
 n_traj = 4
 seed = 2026
 stride = 10
-output_dir = "Data/mock_ml"
+output_dir = "runs/mock_ml"
 prefix = "diatomic"

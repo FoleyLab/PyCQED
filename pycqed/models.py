@@ -12,7 +12,7 @@ from .electronic import ElectronicData
 
 
 class DoubleWellModel:
-    """The 1-D isomerization model hard-coded in the legacy ``polaritonic.E_of_R``.
+    """The 1-D isomerization model hard-coded in the legacy ``ARCHIVE/polaritonic.py`` (``E_of_R``).
 
     Each adiabatic surface is the lower root of a 2x2 diabatic problem built from
     displaced harmonic wells.  The legacy code had no dipoles, only a constant coupling

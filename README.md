@@ -1,7 +1,7 @@
 # PyCQED
 Fewest-switches surface hopping (FSSH) on cavity-QED polaritonic surfaces. A two-level molecule, described by any electronic-structure model (analytic or machine-learned), couples to one lossy cavity mode with an arbitrary number of Fock states. The photon loss enters through a complex frequency omega - i gamma/2, so the polaritonic Hamiltonian is non-Hermitian.
 
-The `pycqed/` package replaces the legacy `polaritonic.py` and `PFSSH.py` scripts. Those scripts are kept unchanged at the bottom of this README for reference.
+The `pycqed/` package replaces the legacy `polaritonic.py` and `PFSSH.py` scripts. Those scripts, with the old notebooks, plotting scripts and data, now live unchanged in `ARCHIVE/` (see the end of this README).
 
 ## Install and test
 ```bash
@@ -36,6 +36,8 @@ Or use the config-driven runner: `python scripts/run_fssh.py examples/mock_ml_di
 - `examples/mock_ml_model.py`: a values-only diatomic standing in for an ML model.
 - `examples/legacy_double_well.toml`: the old `run.sh` scenario.
 
+Output goes to `runs/`, which git ignores.
+
 ## Physics
 - **Basis.** |a(R)> x |n>, with a in {g, e} and n = 0..n_fock. The dipoles enter only as M_ab = e . mu_ab (scalarized along the polarization).
 - **Hamiltonians.** With kappa = sqrt(omega/2) lambda and w = omega - i gamma/2:
@@ -69,10 +71,12 @@ Or use the config-driven runner: `python scripts/run_fssh.py examples/mock_ml_di
 | `io.py` | trajectory records, `scan_pes` |
 | `cli.py` | TOML runner |
 
+Other top-level folders: `examples/` (configs and the mock ML model), `scripts/` (`run_fssh.py`), `tests/` (pytest), and `ARCHIVE/` (legacy code, notebooks and data).
+
 ---
 
-# Legacy scripts (`polaritonic.py`, `PFSSH.py`)
-These are kept for reference and regression testing. Known problems are listed in the audit on branch `refactor/ml-polariton-fssh`. The two most important:
+# Legacy scripts (`ARCHIVE/`)
+`ARCHIVE/` holds the pre-refactor code, notebooks, plotting scripts and data. Its layout is the old top-level layout, so the scripts and the top-level notebooks still work when run from inside it (`cd ARCHIVE`). `tests/` imports `ARCHIVE/polaritonic.py` as a regression reference. Known problems are listed in the audit on branch `refactor/ml-polariton-fssh`. The two most important:
 - Since commit 98aa224 the imaginary part of the polariton energies is not written out, so the photon decay is missing from the dynamics.
 - Hops from UP to the ground state are never taken.
 
@@ -80,7 +84,7 @@ These are kept for reference and regression testing. Known problems are listed i
 
 - Clone the repository
 
-- To run a single trajectory: `python PFSSH.py Scale_True Complex_DC 1 1.0 2.45 0.02 test > output.txt &`
+- To run a single trajectory, from inside `ARCHIVE/`: `python PFSSH.py Scale_True Complex_DC 1 1.0 2.45 0.02 test > output.txt &`
 
 In the above example, there are 7 arguments passed to the python script PFSSH.py.  
 

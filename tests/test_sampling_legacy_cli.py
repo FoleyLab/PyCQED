@@ -19,9 +19,10 @@ def test_wigner_widths():
     assert np.isclose(np.std(Ps), np.sqrt(a / 2), rtol=0.05)
 
 
-def test_legacy_eigenvalues_reproduced():
-    """The Rabi / n_fock = 1 limit reproduces the legacy polaritonic.py Hamiltonian."""
-    legacy_mod = pytest.importorskip("polaritonic")
+def test_legacy_eigenvalues_reproduced(monkeypatch):
+    """The Rabi / n_fock = 1 limit reproduces the legacy ARCHIVE/polaritonic.py Hamiltonian."""
+    monkeypatch.syspath_prepend(str(ROOT / "ARCHIVE"))
+    import polaritonic as legacy_mod
     omc, gc, gam = 2.45 / 27.211, 0.02 / 27.211, 1.0e-3 / 27.211
     legacy = legacy_mod.polaritonic({"Number_of_Photons": 1, "Photon_Energys": [omc],
                                      "Coupling_Strengths": [gc], "Photon_Lifetimes": [gam]})

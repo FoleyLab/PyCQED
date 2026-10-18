@@ -3,14 +3,11 @@
 *.eps
 *.pptx
 *.pyc
-.ipynb_checkpoints/*
 *.txt
-Notebooks/.ipynb_checkpoints/*
-Data/*.txt
+*.npz
 .DS_Store
 __pycache__/
-__pycache__/*
-*.npz
-Data/*/
+.ipynb_checkpoints/
 .pytest_cache/
 *.egg-info/
+runs/

@@ -1,4 +1,4 @@
-# The scenario of the legacy PFSSH.py / run.sh: 1-D double well, Rabi coupling, one photon.
+# The scenario of the legacy ARCHIVE/PFSSH.py / ARCHIVE/run.sh: 1-D double well, Rabi coupling, one photon.
 #   python PFSSH.py Scale_True Real_DC 1 1.0 2.45 0.02 ...
 [model]
 entry_point = "pycqed.models:DoubleWellModel"
@@ -33,5 +33,5 @@ active = 2                  # UP
 n_traj = 1
 seed = 1
 stride = 500
-output_dir = "Data/legacy"
+output_dir = "runs/legacy"
 prefix = "double_well"
