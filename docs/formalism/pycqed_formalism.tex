@@ -1,0 +1,591 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,bm}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+% ---------- notation ----------
+\newcommand{\ket}[1]{\lvert #1 \rangle}
+\newcommand{\bra}[1]{\langle #1 \rvert}
+\newcommand{\braket}[2]{\langle #1 \vert #2 \rangle}
+\newcommand{\R}{\mathbf{R}}
+\newcommand{\Pv}{\mathbf{P}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\Mm}{\mathsf{M}}
+\newcommand{\grad}{\nabla}
+\newcommand{\dd}{\mathbf{d}}
+\newcommand{\bdag}{\hat b^{\dagger}}
+\newcommand{\bop}{\hat b}
+\newcommand{\eps}{\hat{\bm{\epsilon}}}
+\newcommand{\mub}{\bm{\mu}}
+\newcommand{\wt}{\tilde\omega}
+\newcommand{\UL}{U_{\mathrm L}}
+\newcommand{\Hm}{\mathsf{H}}
+\newcommand{\Dm}{\mathsf{D}}
+\newcommand{\Gm}{\mathsf{G}}
+\newcommand{\Rep}{\operatorname{Re}}
+\newcommand{\Imp}{\operatorname{Im}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\nf}{n_{\mathrm f}}
+
+\title{Formalism implemented in \code{pycqed}:\\
+Fewest-switches surface hopping on non-Hermitian polaritonic surfaces\\
+built from machine-learned two-level electronic structure}
+\author{PyCQED development notes (branch \code{refactor/ml-polariton-fssh})}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+These notes document the equations implemented in the \code{pycqed} package. A molecule is described by a two-level electronic model with energies $E_g(\R)$, $E_e(\R)$ and dipole vectors $\mub_{gg}(\R)$, $\mub_{ee}(\R)$, $\mub_{eg}(\R)$, which an external (e.g.\ machine-learned) model supplies. The molecule couples to a single lossy cavity mode truncated at $\nf$ photons. The loss enters through the complex mode frequency $\omega-i\gamma/2$, which makes the polaritonic Hamiltonian non-Hermitian but complex symmetric. We cover:
+\begin{itemize}
+\item the Jaynes--Cummings, Rabi and Pauli--Fierz Hamiltonians and the basis ordering;
+\item the treatment of the non-Hermitian eigenproblem;
+\item closed-form Jaynes--Cummings eigenpairs;
+\item polaritonic forces and non-adiabatic coupling vectors, including the chain-rule contribution of the intrinsic electronic coupling $\braket{g}{\grad e}$;
+\item the surface-hopping update (electronic propagation, hops, momentum rescaling, decoherence);
+\item photon loss treated as quantum jumps;
+\item Langevin nuclear dynamics;
+\item initial-condition sampling.
+\end{itemize}
+The last section lists the approximations made and the physics that is not yet included.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{Conventions}
+%=====================================================================
+Atomic units are used throughout ($\hbar=m_e=e=1$). Energies are in Hartree, lengths in bohr and times in atomic time units. The CODATA 2018 conversion $1\,E_h = 27.211386245988$\,eV is used.
+\begin{itemize}
+\item \textbf{Nuclei.} The nuclear coordinates are a flat vector $\R\in\mathbb{R}^{N_{\rm dof}}$, typically the $3N$ Cartesians. The momenta are $\Pv$, the masses form the diagonal matrix $\Mm$, and $\vv=\Mm^{-1}\Pv$. Products such as $\vv\cdot\dd$ contract over the $N_{\rm dof}$ nuclear components.
+\item \textbf{Matrices.} Matrices in the product basis are written in sans-serif ($\Hm$, $\Dm$, \dots).
+\item \textbf{Polariton labels.} Polaritonic states carry capital indices $J,K$; the active surface is $a$.
+\item \textbf{Transpose vs.\ adjoint.} A superscript $T$ is the plain transpose, without complex conjugation. A $\dagger$ is the Hermitian adjoint.
+\end{itemize}
+
+%=====================================================================
+\section{Electronic input}
+%=====================================================================
+\subsection{Data supplied by the electronic model}
+At each geometry the electronic model (\code{ElectronicModel.evaluate}) returns the following, in its adiabatic basis $\{\ket{g(\R)},\ket{e(\R)}\}$:
+\begin{equation}
+E_a(\R),\quad \mub_{ab}(\R)=\bra{a}\hat{\mub}\ket{b}\in\mathbb{R}^3,\quad
+\grad E_a,\quad \grad\mub_{ab},\quad
+\dd(\R)\equiv\braket{g}{\grad e}\in\mathbb{R}^{N_{\rm dof}},
+\qquad a,b\in\{g,e\}.
+\end{equation}
+The dipole matrix is symmetric, $\mub_{ge}=\mub_{eg}$. The intrinsic non-adiabatic coupling $\dd$ defaults to zero when the model does not provide it. The electronic derivative-coupling matrix is
+\begin{equation}
+D_{ab}=\braket{a}{\grad b},\qquad
+D=\begin{pmatrix}0&\dd\\-\dd&0\end{pmatrix}.
+\label{eq:Del}
+\end{equation}
+Missing gradients are obtained by central finite differences with step $h$ (default $10^{-4}$ bohr):
+\begin{equation}
+\partial_k X \approx \frac{X(\R+h\hat{\mathbf e}_k)-X(\R-h\hat{\mathbf e}_k)}{2h},
+\label{eq:fd}
+\end{equation}
+which costs $2N_{\rm dof}$ extra model calls. Before differencing, the sign of $\mub_{eg}(\R\pm h\hat{\mathbf e}_k)$ is aligned with $\mub_{eg}(\R)$, so that a sign flip inside the model does not produce a spurious derivative.
+
+An exact second moment $\bra{a}\hat\mu_i\hat\mu_j\ket{b}$ and its gradient may also be supplied. It is used for the dipole self-energy (Sec.~\ref{sec:H}).
+
+\subsection{Projection onto the cavity polarization}
+Every dipole is scalarized along the unit polarization vector $\eps$ before it enters any Hamiltonian:
+\begin{equation}
+M_{ab}(\R)=\eps\cdot\mub_{ab}(\R),\qquad \grad M_{ab}=\eps\cdot\grad\mub_{ab},\qquad
+Q^{\rm exact}_{ab}=\sum_{ij}\epsilon_i\epsilon_j\bra{a}\hat\mu_i\hat\mu_j\ket{b}.
+\end{equation}
+
+\subsection{Phase (gauge) continuity of the excited state}
+\label{sec:phase}
+The adiabatic state $\ket{e}$ is defined only up to its sign. Under $\ket{e}\to-\ket{e}$:
+\begin{equation}
+M_{ge}\to -M_{ge},\qquad \grad M_{ge}\to-\grad M_{ge},\qquad \dd\to-\dd,\qquad Q_{ge}\to -Q_{ge},
+\end{equation}
+while $E_a$, $M_{gg}$ and $M_{ee}$ are unchanged. Two physically identical points can therefore look discontinuous if the model returns uncorrelated signs. Along a trajectory, the data at $\R'=\R+\Delta\R$ are compared with the reference data at $\R$ through the overlap score
+\begin{equation}
+S=\mub_{eg}(\R')\cdot\big[\mub_{eg}(\R)+\grad\mub_{eg}(\R)\,\Delta\R\big]
++\grad\mub_{eg}(\R'):\grad\mub_{eg}(\R)
++\dd(\R')\cdot\dd(\R),
+\label{eq:phase}
+\end{equation}
+and the phase of $\ket{e(\R')}$ is flipped if $S<0$. Two features make the test robust:
+\begin{itemize}
+\item The first term uses a first-order extrapolation, so a transition dipole that genuinely passes through zero is not flagged as a flip.
+\item The gradient and NAC terms break the tie when $\mub_{eg}\approx0$.
+\end{itemize}
+This alignment is applied before the projection, at every step and in every surface scan (\code{align\_phase}).
+
+%=====================================================================
+\section{Cavity mode and product basis}
+%=====================================================================
+One cavity mode has:
+\begin{itemize}
+\item real frequency $\omega$;
+\item loss rate $\gamma$ (the decay rate of the photon number), entering through the complex frequency
+\begin{equation}
+\wt=\omega-\tfrac{i}{2}\gamma;
+\end{equation}
+\item light--matter coupling $\lambda$ and polarization $\eps$, i.e.\ $\bm\lambda=\lambda\eps$;
+\item Fock cutoff $\nf\ge1$.
+\end{itemize}
+The bilinear coupling prefactor is
+\begin{equation}
+\kappa=\sqrt{\frac{\omega}{2}}\,\lambda ,
+\end{equation}
+which deliberately uses the \emph{real} frequency. The legacy parameterization in terms of a coupling energy $g$ maps to $\lambda=g/(\sqrt{\omega/2}\,\mu_{\rm ref})$ (\code{CavityMode.from\_coupling\_strength}).
+
+\paragraph{Basis and ordering.}
+The working basis is the product of the moving electronic adiabats and the Fock states,
+\begin{equation}
+\ket{a,n}\equiv\ket{a(\R)}\otimes\ket{n},\qquad a\in\{g\!=\!0,\ e\!=\!1\},\quad n=0,\dots,\nf,
+\end{equation}
+of dimension $N_s=2(\nf+1)$, ordered by the index
+\begin{equation}
+k(a,n)=a\,(\nf+1)+n .
+\end{equation}
+The first $\nf+1$ entries are therefore $\ket{g,0},\dots,\ket{g,\nf}$ and the next $\nf+1$ are $\ket{e,0},\dots,\ket{e,\nf}$.
+
+\paragraph{Operators.} In the truncated Fock space, $\bop\ket{n}=\sqrt n\ket{n-1}$. On the matter side, $\hat\sigma_+=\ket e\bra g$, $\hat\sigma_-=\ket g\bra e$, and we write $\hat P_{ab}=\ket a\bra b\otimes\hat 1$. All matrices are built with Kronecker products, matter $\otimes$ photon.
+
+%=====================================================================
+\section{Hamiltonians}
+\label{sec:H}
+%=====================================================================
+All three models share the form
+\begin{equation}
+\hat H_X(\R)=\sum_{a}E_a(\R)\,\hat P_{aa}+\wt\;\hat 1\otimes\bdag\bop+\hat V_X(\R),
+\end{equation}
+where the photon zero-point energy $\omega/2$ is omitted as a constant shift. The coupling terms are
+\begin{align}
+\text{JC:}\quad & \hat V_{\rm JC}=\kappa\,M_{eg}(\R)\left(\hat\sigma_+\otimes\bop+\hat\sigma_-\otimes\bdag\right),\\
+\text{Rabi:}\quad & \hat V_{\rm Rabi}=\kappa\,M_{eg}(\R)\left(\hat\sigma_++\hat\sigma_-\right)\otimes\left(\bop+\bdag\right),\\
+\text{PF:}\quad & \hat V_{\rm PF}=\kappa\sum_{ab}M_{ab}(\R)\,\ket a\bra b\otimes\left(\bop+\bdag\right)
++\frac{\lambda^2}{2}\sum_{ab}Q_{ab}(\R)\,\hat P_{ab}.
+\label{eq:HPF}
+\end{align}
+The Pauli--Fierz model is the length-gauge, dipole-approximation Hamiltonian
+$\hat H_{\rm el}+\omega\bdag\bop+\sqrt{\omega/2}\,(\bm\lambda\cdot\hat{\mub})(\bop+\bdag)+\tfrac12(\bm\lambda\cdot\hat{\mub})^2$,
+projected onto $\{\ket g,\ket e\}$. It keeps the permanent dipoles and the dipole self-energy (DSE). The DSE matrix is either the square of the projected dipole matrix, or the exact projected second moment when the model provides one:
+\begin{equation}
+Q_{ab}=(M^2)_{ab}=\sum_{c\in\{g,e\}}M_{ac}M_{cb}\qquad\text{or}\qquad Q_{ab}=Q^{\rm exact}_{ab}.
+\end{equation}
+The DSE can be switched off for testing (\code{dse=False}).
+
+Writing the coupling terms with basis tensors $\hat T_{ab}$, $\hat V_X=\kappa\sum_{ab}M_{ab}\hat T_{ab}\;[+\tfrac{\lambda^2}{2}\sum_{ab}Q_{ab}\hat P_{ab}]$, the three models differ only in which tensors are non-zero:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & $\hat T_{gg},\ \hat T_{ee}$ & $\hat T_{eg}$ & $\hat T_{ge}$\\
+\midrule
+JC & 0 & $\hat\sigma_+\otimes\bop$ & $\hat\sigma_-\otimes\bdag$\\
+Rabi & 0 & $\hat\sigma_+\otimes(\bop+\bdag)$ & $\hat\sigma_-\otimes(\bop+\bdag)$\\
+PF & $\hat P_{aa}(\hat 1\otimes(\bop+\bdag))$ & $\hat\sigma_+\otimes(\bop+\bdag)$ & $\hat\sigma_-\otimes(\bop+\bdag)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Properties.}
+\begin{itemize}
+\item Every coupling is real, so the matrix $\Hm$ is \emph{complex symmetric}: $\Hm^T=\Hm$, but $\Hm^\dagger\neq\Hm$ when $\gamma>0$.
+\item The anti-Hermitian part is $-\tfrac{i}{2}\gamma\,\hat 1\otimes\bdag\bop$.
+\item $\hat H_{\rm JC}$ conserves the excitation number $\hat N_{\rm exc}=\hat P_{ee}+\hat 1\otimes\bdag\bop$; the Rabi and PF Hamiltonians do not.
+\item The legacy code corresponds to the Rabi model with $\nf=1$ and constant $\kappa M_{eg}=g$.
+\end{itemize}
+
+\subsection{Gradient of the matrix elements}
+Every $\R$-dependent term is linear in the matter matrix elements, so
+\begin{equation}
+\grad\Hm=\sum_a\grad E_a\,\hat P_{aa}+\kappa\sum_{ab}\grad M_{ab}\,\hat T_{ab}+\frac{\lambda^2}{2}\sum_{ab}\grad Q_{ab}\,\hat P_{ab},
+\qquad \grad(M^2)=(\grad M)M+M(\grad M).
+\label{eq:gradH}
+\end{equation}
+Here $\grad\Hm$ is the derivative of the matrix \emph{elements} in the moving basis. It is not the matrix of the operator $\grad\hat H$. The two are related through the basis-coupling matrix
+\begin{equation}
+\Dm=\sum_{ab}D_{ab}\hat P_{ab}=\begin{pmatrix}0&\dd\\-\dd&0\end{pmatrix}\otimes\hat 1,
+\qquad
+\bra{a,n}\grad\hat H\ket{b,m}=\big(\grad\Hm-[\Hm,\Dm]\big)_{an,bm}.
+\label{eq:Dfull}
+\end{equation}
+
+%=====================================================================
+\section{Non-Hermitian eigenproblem}
+%=====================================================================
+\subsection{c-normalized eigenvectors}
+Because $\Hm^T=\Hm$, the left eigenvector belonging to $E_J$ is the transpose of the right one. The right eigenvectors $\Hm u_J=E_Ju_J$ are normalized with the bilinear (``c'') product:
+\begin{equation}
+u_J^T u_K=\delta_{JK},\qquad U=(u_1,\dots,u_{N_s}),\qquad \UL=U^T,\qquad \UL\Hm U=\operatorname{diag}(E_J).
+\label{eq:cnorm}
+\end{equation}
+The energies $E_J$ are complex. Their real parts define the potential-energy surfaces, and $-2\,\Imp E_J$ is the photon-loss rate of state $J$. If the computed $U^TU$ deviates from the identity by more than $10^{-8}$ (e.g.\ near a degeneracy), the code falls back to $\UL=U^{-1}$. For $\gamma=0$, $U$ is real orthogonal and everything reduces to the Hermitian theory.
+
+\paragraph{Exceptional points.} The c-normalization fails when $u^Tu\to0$, i.e.\ at an exceptional point (EP), where two eigenpairs coalesce. Before normalization the code evaluates
+\begin{equation}
+r_J=\frac{|u_J^Tu_J|}{u_J^\dagger u_J}\in(0,1]
+\end{equation}
+and issues an \code{ExceptionalPointWarning} if any $r_J<10^{-3}$. Note that $1/r_J^2$ is the Petermann factor.
+
+\subsection{State tracking and sign gauge}
+\label{sec:track}
+At $t=0$ the states are sorted by $\Rep E_J$. At later steps the columns are permuted with the assignment $\pi$ that maximizes $\sum_J|(\UL^{\rm prev}U)_{J\pi(J)}|$ (Hungarian algorithm). Labels therefore follow the character of each state through crossings of uncoupled states rather than the energy ordering.
+
+The c-normalization fixes each eigenvector up to a sign only. The sign is chosen so that
+\begin{equation}
+\Rep\,(\UL^{\rm prev}U)_{JJ}>0
+\end{equation}
+which is a discrete parallel transport. At $t=0$ the largest-magnitude component of each column is given a positive real part instead.
+
+\subsection{Polaritonic amplitudes and populations}
+For a wavefunction $\psi$ in the product basis, the polaritonic amplitudes and the reported populations are
+\begin{equation}
+c=\UL\psi,\qquad \rho_J=\frac{|c_J|^2}{\sum_K|c_K|^2}.
+\end{equation}
+For $\gamma>0$ the right eigenvectors are not orthogonal in the ordinary sense, so $\sum_K|c_K|^2\neq\|\psi\|^2$ in general. The populations are therefore normalized explicitly.
+
+%=====================================================================
+\section{Forces and non-adiabatic couplings}
+%=====================================================================
+\subsection{Chain-rule expressions}
+The polaritonic states are
+\begin{equation}
+\ket{\Psi_J(\R)}=\sum_{a,n}U_{(a,n),J}(\R)\,\ket{a(\R)}\otimes\ket n .
+\end{equation}
+Their $\R$-dependence enters both through the expansion coefficients $U$ and through the electronic adiabats. Differentiating $\Hm U=U\operatorname{diag}(E)$ and projecting with $\UL$ gives, with $\Gm=\UL(\grad\Hm)U$,
+\begin{equation}
+\Gm+\operatorname{diag}(E)\,X=X\operatorname{diag}(E)+\operatorname{diag}(\grad E),\qquad X\equiv\UL\grad U .
+\end{equation}
+Hence the energy gradients and the forces on each surface are
+\begin{equation}
+\grad E_J=\big[\UL(\grad\Hm)U\big]_{JJ},\qquad \mathbf F_J=-\Rep\,\grad E_J .
+\label{eq:force}
+\end{equation}
+Using $\grad\ket{a(\R)}=\sum_b\ket{b}D_{ba}$, the non-adiabatic coupling vectors (NACs) are
+\begin{equation}
+\boxed{\;
+\dd_{JK}\equiv\braket{\tilde\Psi_J}{\grad\Psi_K}
+=\frac{\big[\UL(\grad\Hm)U\big]_{JK}}{E_K-E_J}
++\big[\UL\,\Dm\,U\big]_{JK},\qquad J\neq K,\;}
+\label{eq:nac}
+\end{equation}
+where $\bra{\tilde\Psi_J}$ is the left (biorthogonal) state. The first term is the Hellmann--Feynman-like contribution from the $\R$-dependence of $E_a$, $M_{ab}$ and $Q_{ab}$. The second term is the chain-rule contribution of the intrinsic electronic coupling $\braket{g}{\grad e}$, and it vanishes when $\dd=0$. Using Eq.~\eqref{eq:Dfull}, Eq.~\eqref{eq:nac} is equivalent to $\dd_{JK}=[\UL\bra{\cdot}\grad\hat H\ket{\cdot}U]_{JK}/(E_K-E_J)$.
+
+Properties:
+\begin{itemize}
+\item \textbf{Antisymmetry.} $U^TU=1$ makes $X$ antisymmetric, and $\Dm$ is real antisymmetric, so
+\begin{equation}
+\dd_{JK}=-\dd_{KJ},\qquad \dd_{JJ}=0 .
+\end{equation}
+For $\gamma>0$ the NACs are complex and antisymmetric, but \emph{not} anti-Hermitian.
+\item \textbf{Degeneracy guard.} If $|E_K-E_J|<10^{-12}$, the first term of Eq.~\eqref{eq:nac} is set to zero. Such pairs are exact crossings of uncoupled states, e.g.\ states of different JC manifolds.
+\item \textbf{Velocity projection.} The electronic equations need only the projection
+\begin{equation}
+(\vv\cdot\dd)_{JK}=\frac{[\UL(\vv\cdot\grad\Hm)U]_{JK}}{E_K-E_J}+[\UL(\vv\cdot\Dm)U]_{JK},
+\label{eq:vd}
+\end{equation}
+which is assembled directly from the contracted matrices $\vv\cdot\grad\Hm$ and $\vv\cdot\Dm$.
+\end{itemize}
+
+\subsection{Selection rule for the intrinsic term in the JC limit}
+$\Dm$ connects only $\ket{g,n}$ with $\ket{e,n}$, which have excitation numbers $n$ and $n+1$. JC eigenstates have a definite $N_{\rm exc}$, so $[\UL\Dm U]_{JK}\neq0$ only when $N_{\rm exc}(J)-N_{\rm exc}(K)=\pm1$. In particular:
+\begin{itemize}
+\item the intrinsic coupling makes \emph{no} contribution to $\dd_{{\rm LP}_N,{\rm UP}_N}$ within one manifold;
+\item it couples ${\rm LP}_1/{\rm UP}_1$ to $\ket{g,0}$, and manifold $N$ to manifold $N\pm1$.
+\end{itemize}
+In the Rabi and PF models the counter-rotating and permanent-dipole terms mix the manifolds, so the intrinsic term does enter the LP--UP coupling. This is why the full NAC matrix is kept.
+
+%=====================================================================
+\section{Analytical Jaynes--Cummings solution}
+%=====================================================================
+$\hat H_{\rm JC}$ is block diagonal in $N=N_{\rm exc}$ (\code{AnalyticJCSolver}). The truncated basis splits into three groups:
+\begin{itemize}
+\item $N=0$: the single state $\ket{G_0}=\ket{g,0}$, with $E=E_g$.
+\item $1\le N\le\nf$: the $2\times2$ blocks spanned by $\{\ket{g,N},\ket{e,N-1}\}$,
+\begin{equation}
+\Hm_N=\begin{pmatrix}a_N&c_N\\c_N&b_N\end{pmatrix},\qquad
+a_N=E_g+N\wt,\quad b_N=E_e+(N-1)\wt,\quad c_N=\kappa M_{eg}\sqrt N .
+\end{equation}
+\item The uncoupled truncation state $\ket{e,\nf}$, with $E=E_e+\nf\wt$.
+\end{itemize}
+The states are ordered $[G_0,{\rm LP}_1,{\rm UP}_1,\dots,{\rm LP}_{\nf},{\rm UP}_{\nf},\ket{e,\nf}]$.
+
+\paragraph{Energies.} With the detuning $\delta=\omega-(E_e-E_g)$,
+\begin{equation}
+\Delta\equiv\frac{a_N-b_N}{2}=\frac12\Big(\delta-\frac{i\gamma}{2}\Big),\qquad
+s_N=\sqrt{\Delta^2+c_N^2},
+\end{equation}
+\begin{equation}
+E_{{\rm UP}_N/{\rm LP}_N}=\frac{a_N+b_N}{2}\pm s_N
+=\frac{E_g+E_e+(2N-1)\wt}{2}\pm s_N .
+\end{equation}
+Note that $\Delta$ does not depend on $N$. In the Hermitian limit $2s_N=\sqrt{\delta^2+4c_N^2}$, which gives the vacuum Rabi splitting $2\kappa|M_{eg}|\sqrt N$ at resonance. With loss at resonance, $2s_N=\sqrt{4c_N^2-\gamma^2/4}$. This is real in the strong-coupling regime $c_N>\gamma/4$ and imaginary below it. The \textbf{exceptional point} is therefore
+\begin{equation}
+\delta=0,\qquad \kappa|M_{eg}|\sqrt N=\gamma/4 .
+\end{equation}
+
+\paragraph{Eigenvectors.} With the complex mixing angle $\theta_N$ defined by
+\begin{equation}
+\cos2\theta_N=\frac{\Delta}{s_N},\qquad \sin2\theta_N=\frac{c_N}{s_N},
+\end{equation}
+the eigenvectors are
+\begin{equation}
+\ket{{\rm UP}_N}=\cos\theta_N\ket{g,N}+\sin\theta_N\ket{e,N-1},\qquad
+\ket{{\rm LP}_N}=-\sin\theta_N\ket{g,N}+\cos\theta_N\ket{e,N-1}.
+\end{equation}
+They are c-normalized automatically, because $\cos^2\theta+\sin^2\theta=1$ also for complex $\theta$. The half-angle functions are evaluated stably:
+\begin{itemize}
+\item if $|1+\cos2\theta|\ge|1-\cos2\theta|$, then $\cos\theta=\sqrt{(1+\cos2\theta)/2}$ and $\sin\theta=\sin2\theta/(2\cos\theta)$;
+\item otherwise the roles of $\cos\theta$ and $\sin\theta$ are swapped.
+\end{itemize}
+The near-EP test uses $|\cos\theta|^2+|\sin\theta|^2>10^3$.
+
+\paragraph{Branch continuity.} At $t=0$ the principal branch of the square root is used ($\Rep s_N\ge0$). Afterwards the sign of $s_N$ is chosen to minimize $|s_N-s_N^{\rm prev}|$, with $s_N^{\rm prev}=(E_{{\rm UP}_N}-E_{{\rm LP}_N})/2$ from the previous step. Without this, the principal branch would swap the labels when a trajectory crosses resonance below the EP. ``UP'' always denotes the $+s_N$ branch.
+
+\paragraph{Gradients.} With
+\begin{equation}
+\grad\Delta=\tfrac12(\grad E_g-\grad E_e),\qquad \grad c_N=\kappa\sqrt N\,\grad M_{eg},
+\qquad
+\grad s_N=\frac{\Delta\,\grad\Delta+c_N\grad c_N}{s_N},
+\end{equation}
+the energy gradients are
+\begin{equation}
+\grad E_{{\rm UP}_N/{\rm LP}_N}=\tfrac12(\grad E_g+\grad E_e)\pm\grad s_N .
+\end{equation}
+
+\paragraph{NACs.} Within a block, the Hellmann--Feynman part is the gradient of the mixing angle,
+\begin{equation}
+\dd^{\rm HF}_{{\rm LP}_N,{\rm UP}_N}=\grad\theta_N=\frac{\Delta\,\grad c_N-c_N\,\grad\Delta}{2s_N^2}=-\dd^{\rm HF}_{{\rm UP}_N,{\rm LP}_N}.
+\end{equation}
+This is a Lorentzian in the detuning, of width set by $c_N$, and it diverges as $s_N^{-2}$ at an EP. The HF part vanishes between different blocks.
+
+The intrinsic part $[U^T\Dm U]$ couples only neighbouring manifolds. For $X_N$ in block $N$ and $Y_{N+1}$ in block $N+1$,
+\begin{equation}
+[U^T\Dm U]_{X_N,Y_{N+1}}=\dd\;\langle g,N|X_N\rangle\,\langle e,N|Y_{N+1}\rangle ,
+\end{equation}
+where $\langle\cdot|\cdot\rangle$ here denotes the component of the c-normalized column. Explicitly:
+\begin{align}
+&[\,\cdot\,]_{{\rm UP}_N,{\rm UP}_{N+1}}=\dd\cos\theta_N\sin\theta_{N+1}, &&[\,\cdot\,]_{{\rm UP}_N,{\rm LP}_{N+1}}=\dd\cos\theta_N\cos\theta_{N+1},\\
+&[\,\cdot\,]_{{\rm LP}_N,{\rm UP}_{N+1}}=-\dd\sin\theta_N\sin\theta_{N+1}, &&[\,\cdot\,]_{{\rm LP}_N,{\rm LP}_{N+1}}=-\dd\sin\theta_N\cos\theta_{N+1},
+\end{align}
+with $G_0$ treated as block 0 with $\cos\theta_0=1$, so that, e.g., $[\,\cdot\,]_{G_0,{\rm UP}_1}=\dd\sin\theta_1$ and $[\,\cdot\,]_{G_0,{\rm LP}_1}=\dd\cos\theta_1$. The truncation state $\ket{e,\nf}$ acts as block $\nf+1$ with unit component on $\ket{e,\nf}$. These expressions hold in the analytic gauge. The code afterwards applies the sign convention of Sec.~\ref{sec:track}, which multiplies $\dd_{JK}$ by $s_Js_K$ with $s_J=\pm1$.
+
+The analytic and numerical solvers agree to $10^{-10}$ in energies, gradients and NACs (test suite).
+
+%=====================================================================
+\section{Nuclear dynamics: velocity Verlet and Langevin (BBK)}
+%=====================================================================
+The nuclei move classically on the active surface $a$, with the force of Eq.~\eqref{eq:force}. An optional Langevin bath with friction $\zeta$ (in inverse time) and temperature $k_BT$ models vibrational relaxation and thermalization by the environment. It acts uniformly on all degrees of freedom and is integrated with the Br\"unger--Brooks--Karplus scheme:
+\begin{align}
+\Pv_{1/2}&=\Pv(t)+\frac{\Delta t}{2}\Big[\mathbf F_a(\R(t))-\zeta\Pv(t)+\bm\eta\Big],\\
+\R(t+\Delta t)&=\R(t)+\Delta t\,\Mm^{-1}\Pv_{1/2},\\
+\Pv(t+\Delta t)&=\frac{\Pv_{1/2}+\frac{\Delta t}{2}\big[\mathbf F_a(\R(t+\Delta t))+\bm\eta'\big]}{1+\zeta\Delta t/2},
+\end{align}
+with independent Gaussian random forces satisfying the fluctuation--dissipation relation
+\begin{equation}
+\langle\eta_i\eta_j\rangle=\frac{2\zeta M_i k_BT}{\Delta t}\,\delta_{ij}.
+\end{equation}
+Three limits follow:
+\begin{itemize}
+\item $\zeta=0$ gives velocity Verlet.
+\item $T=0$ with $\zeta>0$ gives deterministic damping (used in the legacy example).
+\item $T>0$ gives canonical sampling of the nuclei on the active surface.
+\end{itemize}
+The legacy code applied the friction twice in the second half-step (an effective $1.5\zeta$); that error is not present here.
+
+%=====================================================================
+\section{Electronic propagation}
+%=====================================================================
+The electronic--photonic wavefunction is
+\begin{equation}
+\ket{\Psi(t)}=\sum_{a,n}\psi_{an}(t)\ket{a(\R(t))}\otimes\ket{n}.
+\end{equation}
+It is propagated in the product basis rather than the polaritonic basis. This avoids gauge and trivial-crossing problems of the polaritonic basis at narrow LP/UP avoided crossings. Inserting it into $i\partial_t\Psi=\hat H\Psi$ along the classical path gives
+\begin{equation}
+\dot\psi=\mathsf K\,\psi,\qquad \mathsf K(t)=-i\,\Hm(\R(t))-\vv(t)\cdot\Dm(\R(t)).
+\label{eq:tdse}
+\end{equation}
+\begin{itemize}
+\item $\vv\cdot\Dm$ is real antisymmetric and generates a rotation.
+\item The only norm-changing term is the anti-Hermitian photon part:
+\begin{equation}
+\frac{d}{dt}\|\psi\|^2=-\gamma\,\bra\psi\hat 1\otimes\bdag\bop\ket\psi .
+\end{equation}
+\item In the polaritonic representation, Eq.~\eqref{eq:tdse} is the familiar $\dot c_J=-iE_Jc_J-\sum_K(\vv\cdot\dd)_{JK}c_K$.
+\end{itemize}
+
+Each nuclear step $[t,t+\Delta t]$ is divided into $n_s$ substeps of length $h=\Delta t/n_s$, evaluated at the midpoints $x_j=(j+\tfrac12)/n_s$. Within the step, $\Hm$, $\grad\Hm$, $\Dm$ and $\vv$ are interpolated linearly between the two endpoint geometries:
+\begin{equation}
+\Hm(x)=(1-x)\Hm(t)+x\Hm(t+\Delta t),\ \text{etc.},\qquad
+\psi\leftarrow\exp\!\big[h\,\mathsf K(x_j)\big]\,\psi .
+\end{equation}
+The matrix exponential is evaluated exactly with \code{scipy.linalg.expm}. The endpoint velocities are taken before any hop.
+
+%=====================================================================
+\section{Fewest-switches hopping}
+%=====================================================================
+\subsection{Hopping probabilities}
+At every substep the interpolated $\Hm(x_j)$ is diagonalized with the tracking of Sec.~\ref{sec:track} (no extra model calls). The amplitudes $c=\UL\psi$ and the matrix $\vv\cdot\dd$ of Eq.~\eqref{eq:vd} are formed, and Tully's flux out of the active state $a$ into each other state $k$ is accumulated:
+\begin{equation}
+g_{a\to k}\mathrel{+}=h\;\frac{\max\!\big(0,\;-2\,\Rep\big[c_k^*\,(\vv\cdot\dd)_{ka}\,c_a\big]\big)}{|c_a|^2},\qquad k\neq a,
+\label{eq:tully}
+\end{equation}
+skipped when $|c_a|^2<10^{-14}$. Both upward and downward hops are allowed.
+
+\subsection{Hop selection and momentum rescaling}
+If no photon jump occurred in the step (Sec.~\ref{sec:jump}), a uniform random number $\xi\in[0,1)$ is compared with the cumulative sums of $g_{a\to k}$, and a hop $a\to k$ is attempted at the end-of-step geometry. Energy is conserved with respect to the real parts of the surfaces, $\Delta E=\Rep(E_k-E_a)$. The rescaling direction $\mathbf u$ is one of the following:
+\begin{itemize}
+\item \textbf{NAC} (default): the complex vector $\dd_{ak}$ rotated by a global phase to make it as real as possible,
+\begin{equation}
+\eta=\tfrac12\arg\sum_i d_{ak,i}^2,\qquad \mathbf u=\Rep\big(\dd_{ak}e^{-i\eta}\big),
+\end{equation}
+which maximizes $\|\Rep(\dd_{ak}e^{-i\eta})\|$. In 1-D this reduces to rescaling along $\pm\hat R$.
+\item \textbf{velocity}: $\mathbf u=\vv$;
+\item \textbf{none}: no rescaling (a test option; it does not conserve energy).
+\end{itemize}
+With $A=\sum_iu_i^2/2M_i$ and $B=\sum_iP_iu_i/M_i$, energy conservation requires $A\alpha^2-B\alpha+\Delta E=0$:
+\begin{equation}
+\Pv\leftarrow\Pv-\alpha\,\mathbf u,\qquad
+\alpha=\frac{B-\operatorname{sgn}(B)\sqrt{B^2-4A\Delta E}}{2A},
+\end{equation}
+which is the smaller-magnitude root. If $B^2-4A\Delta E<0$ the hop is \textbf{frustrated}. The active state is kept, and either $\Pv$ is left unchanged (\code{"keep"}) or its component along $\mathbf u$ is reversed, $\Pv\leftarrow\Pv-(B/A)\mathbf u$ (\code{"reverse"}).
+
+\subsection{Decoherence correction (optional)}
+With constant $C$ (typically $0.1\,E_h$), the energy-based decoherence correction of Granucci and Persico damps the inactive amplitudes after each step:
+\begin{equation}
+\tau_k=\frac{1+C/T_{\rm kin}}{|\Rep(E_k-E_a)|},\qquad c_k\leftarrow c_k\,e^{-\Delta t/\tau_k}\ (k\neq a),\qquad
+|c_a|\leftarrow\Big(\textstyle\sum_K|c_K|^2_{\rm before}-\sum_{k\neq a}|c_k|^2\Big)^{1/2}.
+\end{equation}
+Then $\psi\leftarrow Uc$, rescaled to its previous norm. The correction is off by default.
+
+%=====================================================================
+\section{Photon loss as quantum jumps}
+\label{sec:jump}
+%=====================================================================
+Cavity loss is described by the Lindblad equation
+\begin{equation}
+\dot\rho=-i[\hat H_{\rm r},\rho]+\gamma\Big(\bop\rho\bdag-\tfrac12\{\bdag\bop,\rho\}\Big),
+\end{equation}
+where $\hat H_{\rm r}$ is $\hat H$ with $\wt\to\omega$. It is unravelled with the Monte Carlo wavefunction method. The no-jump evolution is generated by the effective Hamiltonian $\hat H_{\rm r}-\tfrac{i}{2}\gamma\bdag\bop$, which is exactly the complex-frequency Hamiltonian of Sec.~\ref{sec:H}. After the electronic propagation of each nuclear step:
+\begin{enumerate}
+\item Compute the jump probability
+\begin{equation}
+p_{\rm jump}=1-\|\psi\|^2\approx\gamma\,\Delta t\,\langle\bdag\bop\rangle,
+\end{equation}
+where $\psi$ was normalized at the start of the step.
+\item With probability $p_{\rm jump}$ a photon is emitted:
+\begin{equation}
+\psi\leftarrow\frac{(\hat 1\otimes\bop)\psi}{\|(\hat 1\otimes\bop)\psi\|},
+\end{equation}
+and the new active surface is drawn from $\rho_J$ of the post-jump state (with $c=\UL\psi$ at the current geometry). The momentum is \emph{not} rescaled: the emitted photon carries away the energy $\approx\Rep(E_{\rm old}-E_{\rm new})\approx\omega$. No hop is attempted in a step with a jump.
+\item Otherwise, renormalize: $\psi\leftarrow\psi/\|\psi\|$.
+\end{enumerate}
+Because $\bop$ lowers the photon number by one, a jump from the $N$-excitation manifold lands in the $(N-1)$-manifold. For example, a jump from ${\rm UP}_2$ lands in ${\rm LP}_1$/${\rm UP}_1$, not in $G_0$. This is the generalization to arbitrary $\nf$ of the legacy ``ground-state sink'', which is correct only for $\nf=1$. With \code{photon\_loss=False}, $\psi$ is never renormalized and $\|\psi\|^2$ is the survival probability; this is a diagnostic mode.
+
+The total energy $T_{\rm kin}+\Rep E_a$ is conserved between jumps (to $\lesssim10^{-6}E_h$ in the tests). It drops by the photon energy at each jump.
+
+%=====================================================================
+\section{Initial conditions}
+%=====================================================================
+\paragraph{Nuclei.} The nuclear positions and momenta are sampled from the ground-state Wigner distribution of a harmonic reference. For a 1-D well with force constant $k$ and $a=\sqrt{kM}=M\omega_0$,
+\begin{equation}
+R\sim\mathcal N\!\Big(R_0,\frac{1}{2a}\Big),\qquad P\sim\mathcal N\!\Big(0,\frac{a}{2}\Big)\qquad(\text{variances}).
+\end{equation}
+The legacy code used the momentum width $\sqrt{a-\sqrt{\pi a}/2}$ in place of $\sqrt{a/2}$, about 1.39 times too broad for its parameters.
+
+For many atoms, the Cartesian Hessian $\mathcal H$ at the minimum $\R_0$ is mass-weighted, $\Mm^{-1/2}\mathcal H\Mm^{-1/2}=L\,\operatorname{diag}(\omega_i^2)L^T$, and each normal mode is sampled independently:
+\begin{equation}
+q_i\sim\mathcal N\!\Big(0,\frac{1}{2\omega_i}\Big),\quad p_i\sim\mathcal N\!\Big(0,\frac{\omega_i}{2}\Big),\qquad
+\R=\R_0+\Mm^{-1/2}Lq,\quad \Pv=\Mm^{1/2}Lp .
+\end{equation}
+Modes with $\omega_i$ below a cutoff (translations and rotations) are left at zero.
+
+\paragraph{Electrons and photons.} The trajectory starts on a chosen polaritonic state $a$. The initial wavefunction is that state's right eigenvector, normalized in the ordinary sense: $\psi(0)=u_a/\|u_a\|$.
+
+\paragraph{Random numbers.} Each trajectory gets an independent \code{numpy} generator spawned from a single \code{SeedSequence}, so ensembles are reproducible and the streams do not overlap.
+
+%=====================================================================
+\section{Algorithm summary}
+%=====================================================================
+\begin{algorithm}[h]
+\caption{One nuclear step of \code{FSSH.step}}
+\begin{algorithmic}[1]
+\State $\Pv_{1/2}\gets\Pv+\frac{\Delta t}{2}(\mathbf F_a-\zeta\Pv+\bm\eta)$;\quad $\R'\gets\R+\Delta t\,\Mm^{-1}\Pv_{1/2}$
+\State Evaluate the electronic model at $\R'$; align the phase of $\ket e$ (Eq.~\ref{eq:phase}); project on $\eps$
+\State Build $\Hm,\grad\Hm,\Dm$ at $\R'$; diagonalize with tracking; compute $\grad E_J$ and $\dd_{JK}$ (Eqs.~\ref{eq:force}, \ref{eq:nac})
+\State $\Pv'\gets[\Pv_{1/2}+\frac{\Delta t}{2}(\mathbf F_a(\R')+\bm\eta')]/(1+\zeta\Delta t/2)$
+\For{$j=0,\dots,n_s-1$} \Comment{electronic substeps}
+  \State Interpolate $\Hm,\grad\Hm,\Dm,\vv$ at $x_j$; diagonalize; $c\gets\UL\psi$; accumulate $g_{a\to k}$ (Eq.~\ref{eq:tully})
+  \State $\psi\gets\exp[h(-i\Hm-\vv\cdot\Dm)]\,\psi$
+\EndFor
+\If{photon loss \textbf{and} $\xi_1<1-\|\psi\|^2$}
+  \State $\psi\gets\bop\psi/\|\bop\psi\|$; draw new $a$ from $|c_J|^2$ \Comment{quantum jump, no rescaling}
+\Else
+  \State $\psi\gets\psi/\|\psi\|$; select a hop from $g_{a\to k}$ with $\xi_2$; rescale $\Pv'$ or treat it as frustrated
+\EndIf
+\State Optional decoherence correction
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Recorded observables.} Every \code{stride} steps the code records:
+\begin{itemize}
+\item $t$, $\R$, $\Pv$ and the active state;
+\item $\Rep E_J$ for all states, and the populations $\rho_J$;
+\item $\|\psi\|^2$ and the photon number $\langle\psi|\bdag\bop|\psi\rangle/\langle\psi|\psi\rangle$;
+\item $T_{\rm kin}$ and $T_{\rm kin}+\Rep E_a$;
+\item the list of hop, frustrated-hop and jump events.
+\end{itemize}
+\code{scan\_pes} returns, along a path of geometries, the surfaces, their slopes and the NACs projected on the path tangent, and the photon content of each state.
+
+%=====================================================================
+\section{Approximations, open choices, and physics not yet included}
+%=====================================================================
+\subsection{Approximations built into the current formalism}
+\begin{enumerate}
+\item \textbf{Two-level truncation of Pauli--Fierz.} The truncated length-gauge PF Hamiltonian is not gauge invariant. The projected DSE $(M^2)_{ab}$ also differs from $\bra a(\eps\cdot\hat{\mub})^2\ket b$, which includes the virtual excited states. The \code{dipole\_squared} hook allows the exact projected second moment to be used if the ML model can provide it.
+\item \textbf{Dipole approximation and a single mode.} $\lambda$ is uniform over the molecule, and only one mode and one polarization are treated.
+\item \textbf{Single molecule.} No collective (Tavis--Cummings) effects, no dark states, no disorder.
+\item \textbf{Non-Hermitian surfaces.} The forces use $\Rep\grad E_J$. The populations rely on the biorthogonal amplitudes, which are non-orthogonal when $\gamma>0$, and the formalism breaks down near exceptional points (only detected, not treated).
+\item \textbf{FSSH.} Classical nuclei, so there is no tunnelling, and zero-point energy may leak. The decoherence correction is optional and phenomenological. The rescaling direction for complex NACs is a choice.
+\item \textbf{Langevin bath.} The friction is uniform, isotropic and Markovian, and acts on all nuclear degrees of freedom. It is a phenomenological stand-in for the solvent or the rest of the molecule.
+\item \textbf{Zero-temperature photon bath.} Only emission ($\bop$ jumps) is included. There is no thermal photon absorption ($\bdag$ jumps) and no pumping.
+\end{enumerate}
+
+\subsection{Physics that may need to be added for the ML application}
+\begin{enumerate}
+\item \textbf{Intrinsic NAC from the ML model.} The formalism uses $\braket{g}{\grad e}$ fully (Eq.~\ref{eq:nac}), but most ML models do not predict it, and it defaults to zero. The model would need to learn it with a phase consistent with $\mub_{eg}$, or it could be estimated from $\grad\Hm$ of an underlying diabatic model.
+\item \textbf{Molecular radiative and non-radiative decay, and pure dephasing.} Only cavity loss is included. Additional Lindblad channels ($\hat\sigma_-$ emission into free space, $\hat\sigma_z$ dephasing) can be added as further jump operators.
+\item \textbf{Thermal photon occupation} at finite cavity temperature ($\bdag$ jumps with rate $\gamma\bar n$).
+\item \textbf{Several modes or polarizations,} and orientational averaging over $\eps$ for isotropic samples.
+\item \textbf{More than two electronic states} (e.g.\ $S_2$, triplets) when the ML model provides them. The product-basis construction generalizes directly.
+\item \textbf{Geometry dependence of $\lambda$,} or non-dipole effects, for plasmonic nanocavities.
+\item \textbf{Initial excitation protocol.} Starting on UP/LP assumes a prepared polariton. A pulse-driven preparation, or initialization from a transition-dipole-weighted (Franck--Condon) excitation, may be more realistic.
+\end{enumerate}
+
+%=====================================================================
+\appendix
+\section{Map from equations to code}
+%=====================================================================
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Content & Module / function \\
+\midrule
+Electronic data, finite differences, phase alignment (Sec.~2) & \code{electronic.py}: \code{CallableModel}, \code{align\_phase}\\
+Projection on $\eps$, cavity parameters (Sec.~3) & \code{cavity.py}: \code{CavityMode}, \code{project}\\
+$\Hm$, $\grad\Hm$, $\Dm$ (Sec.~4) & \code{hamiltonian.py}: \code{CavityHamiltonian}\\
+c-normalization, tracking, NACs (Secs.~5--6) & \code{polariton.py}: \code{diagonalize}, \code{NumericalSolver}\\
+Analytical JC (Sec.~7) & \code{polariton.py}: \code{AnalyticJCSolver}\\
+Nuclear and electronic propagation, hops, jumps (Secs.~8--11) & \code{fssh.py}: \code{FSSH.step}\\
+Initial conditions (Sec.~12) & \code{sampling.py}\\
+Surface scans, trajectory output & \code{io.py}: \code{scan\_pes}, \code{TrajectoryRecord}\\
+Reference models & \code{models.py}: \code{DoubleWellModel}, \code{DiabaticTwoStateModel}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
